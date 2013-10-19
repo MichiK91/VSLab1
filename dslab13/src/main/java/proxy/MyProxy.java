@@ -1,11 +1,17 @@
 package proxy;
 
+import java.io.BufferedInputStream;
 import java.io.BufferedReader;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
+
+import java.util.Properties;
+
+import util.Config;
 
 public class MyProxy {
 
@@ -13,16 +19,21 @@ public class MyProxy {
 	 * @param args
 	 */
 	public static void main(String[] args) {
+		Config c = new Config("proxy");
 		try {
-			ServerSocket server = new ServerSocket(9000);
-			// warte solange bis ein client eine verbindung herstellt
+			
+			int i = c.getInt("tcp.port");
+			System.out.println(i);
+			
+			/*ServerSocket server = new ServerSocket(9000);
 			Socket socket = server.accept();
 			BufferedReader in = new BufferedReader(
 					new InputStreamReader(socket.getInputStream()));
 			String str = in.readLine();
 			System.out.println(str);
 			socket.close();
-			server.close();
+			server.close();*/
+			
 		} catch (Exception e) {
 
 		}
