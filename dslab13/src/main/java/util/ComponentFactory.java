@@ -3,6 +3,7 @@ package util;
 import cli.Shell;
 import client.IClientCli;
 import proxy.IProxyCli;
+import proxy.IProxyCliImpl;
 import server.IFileServerCli;
 
 /**
@@ -31,8 +32,8 @@ public class ComponentFactory {
 	 * @throws Exception if an exception occurs
 	 */
 	public IProxyCli startProxy(Config config, Shell shell) throws Exception {
-		// TODO: create a new proxy instance (including a Shell) and start it
-		return null;
+		
+		return new IProxyCliImpl(config,shell);
 	}
 
 	/**
