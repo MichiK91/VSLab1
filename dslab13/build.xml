@@ -46,11 +46,16 @@
 	</target>
 
 	<target name="run-fileserver1" depends="compile" description="Run 1st fileserver.">
-		<java classname="your.Fileserver" fork="true" classpathref="project.classpath" />
+		<java classname="your.Fileserver" fork="true" classpathref="project.classpath">
+			<arg value = "1"></arg>
+		</java>
+		
 	</target>
 
 	<target name="run-fileserver2" depends="compile" description="Run 2nd fileserver.">
-		<java classname="your.Fileserver" fork="true" classpathref="project.classpath" />
+		<java classname="your.Fileserver" fork="true" classpathref="project.classpath">
+			<arg value = "2"></arg>
+		</java>
 	</target>
 
 	<target name="run-client" depends="compile" description="Run client.">

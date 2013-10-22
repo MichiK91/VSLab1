@@ -1,9 +1,11 @@
 package util;
 
 import cli.Shell;
+import client.ClientCli;
 import client.IClientCli;
 import proxy.IProxyCli;
-import proxy.IProxyCliImpl;
+import proxy.ProxyCli;
+import server.FileServerCli;
 import server.IFileServerCli;
 
 /**
@@ -20,7 +22,7 @@ public class ComponentFactory {
 	 */
 	public IClientCli startClient(Config config, Shell shell) throws Exception {
 		// TODO: create a new client instance (including a Shell) and start it
-		return null;
+		return new ClientCli(config,shell);
 	}
 
 	/**
@@ -33,7 +35,7 @@ public class ComponentFactory {
 	 */
 	public IProxyCli startProxy(Config config, Shell shell) throws Exception {
 		
-		return new IProxyCliImpl(config,shell);
+		return new ProxyCli(config,shell);
 	}
 
 	/**
@@ -46,6 +48,6 @@ public class ComponentFactory {
 	 */
 	public IFileServerCli startFileServer(Config config, Shell shell) throws Exception {
 		// TODO: create a new file server instance (including a Shell) and start it
-		return null;
+		return new FileServerCli(config,shell);
 	}
 }
