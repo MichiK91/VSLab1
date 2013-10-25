@@ -1,24 +1,25 @@
 package server;
 
 import java.io.Closeable;
+import java.io.File;
 import java.io.IOException;
 import java.net.SocketException;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import util.Config;
 
 import message.Response;
-import message.request.DownloadFileRequest;
-import message.request.InfoRequest;
-import message.request.UploadRequest;
-import message.request.VersionRequest;
-import message.response.MessageResponse;
+import message.request.*;
+import message.response.*;
 
 public class FileServerImpl implements IFileServer, Closeable {
 	
 	private Config config;
 	private ProxySenderUDP sender;
+	private String dir;
 	
 	public FileServerImpl(Config config) throws SocketException{
 		this.config = config;
@@ -27,8 +28,16 @@ public class FileServerImpl implements IFileServer, Closeable {
 
 	@Override
 	public Response list() throws IOException {
-		// TODO Auto-generated method stub
-		return null;
+		File file = new File(config.getString("fileserver.dir"));
+		File[] files = file.listFiles();
+		  
+        Set<String> names = new HashSet<String>();
+        for (File f: files) {
+            if (f.isFile()) {
+               names.add(f.getName());
+            }
+        }
+        return new ListResponse(names); 
 	}
 
 	@Override

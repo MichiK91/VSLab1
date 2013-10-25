@@ -75,10 +75,12 @@ public class ClientCli implements IClientCli {
 	@Command
 	public Response download(String filename) throws IOException {
 		DownloadTicketRequest dreq = new DownloadTicketRequest(filename);
-		Response res = sender.send(dreq);
+		DownloadTicketResponse dres = (DownloadTicketResponse) sender.send(dreq);
 		
 		
 		//TODO: download process
+		
+		
 		return null;
 	}
 

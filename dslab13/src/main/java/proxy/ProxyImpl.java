@@ -54,7 +54,8 @@ public class ProxyImpl implements IProxy, Closeable {
 		this.loggedin = false;
 
 	}
-	public ProxyImpl(){
+
+	public ProxyImpl() {
 		this.config = new Config("Proxy");
 		this.userconfig = new Config("user");
 		this.creditscount = 0;
@@ -83,26 +84,25 @@ public class ProxyImpl implements IProxy, Closeable {
 
 		if (pw.equals(confpw)) {
 			boolean old = false;
-			//does the name already exist?
+			// does the name already exist?
 			for (UserInfo u : users) {
 				if (u.getName().equals(user))
 					old = true;
 			}
-			
-			//if not, add it to the users
+
+			// if not, add it to the users
 			if (!old) {
-				creditscount = userconfig.getInt(user
-						+ ".credits");
-				UserInfo ui = new UserInfo(user,creditscount, true);
+				creditscount = userconfig.getInt(user + ".credits");
+				UserInfo ui = new UserInfo(user, creditscount, true);
 				users.add(ui);
-			} 
+			}
 			// if it does exist, update the online status
-			else{
-				for(UserInfo u :users){
-					if(u.getName().equals(user)){
+			else {
+				for (UserInfo u : users) {
+					if (u.getName().equals(user)) {
 						creditscount = u.getCredits();
 						users.remove(u);
-						users.add(new UserInfo(user,creditscount,true));
+						users.add(new UserInfo(user, creditscount, true));
 						break;
 					}
 				}
@@ -128,14 +128,14 @@ public class ProxyImpl implements IProxy, Closeable {
 		if (!loggedin)
 			return new MessageResponse("You have to log in");
 		creditscount += credits.getCredits();
-		for(UserInfo u :users){
-			if(u.getName().equals(user)){
+		for (UserInfo u : users) {
+			if (u.getName().equals(user)) {
 				users.remove(u);
-				users.add(new UserInfo(user,creditscount,true));
+				users.add(new UserInfo(user, creditscount, true));
 				break;
 			}
 		}
-		
+
 		return new BuyResponse(creditscount);
 	}
 
@@ -143,12 +143,12 @@ public class ProxyImpl implements IProxy, Closeable {
 	public Response list() throws IOException {
 		if (!loggedin)
 			return new MessageResponse("You have to log in");
-		
-		//TODO: wie bekommt man die files?
-		ArrayList <FileServerInfo> fsi = s_listener.getServers();
+
+		// TODO: wie bekommt man die files?
+		ArrayList<FileServerInfo> fsi = s_listener.getServers();
 		Set<String> names = new HashSet<String>();
-		for(FileServerInfo f : fsi){
-			names.add(""+f.getPort());
+		for (FileServerInfo f : fsi) {
+			names.add("" + f.getPort());
 		}
 		return new ListResponse(names);
 	}
@@ -157,32 +157,38 @@ public class ProxyImpl implements IProxy, Closeable {
 	public Response download(DownloadTicketRequest request) throws IOException {
 		if (!loggedin)
 			return new MessageResponse("You have to log in");
-		
+
 		ArrayList<FileServerInfo> files = s_listener.getServers();
-		
-		//TODO: name gueltig! woher die liste?? siehe list()
-//		if(filelist.contains(request.getFilename()){
-//			return new MessageResponse("Invalid file name");
-//		}
-		//TODO: genug credits
-//		if(file.getBytes().length < creditscount){
-//			return new MessageResponse("Not enough credits available");
-//		}
-		//which server
+
+		// TODO: name gueltig! woher die liste?? siehe list()
+		// if(filelist.contains(request.getFilename()){
+		// return new MessageResponse("Invalid file name");
+		// }
+		// TODO: genug credits
+		// if(file.getBytes().length < creditscount){
+		// return new MessageResponse("Not enough credits available");
+		// }
+		// which server
 		int usage = 0;
 		FileServerInfo fsi = new FileServerInfo(null, 0, 0, false);
-		for(FileServerInfo f: files){
-			if(f.isOnline()){
-				if(usage >= f.getUsage()){
+		for (FileServerInfo f : files) {
+			if (f.isOnline()) {
+				if (usage >= f.getUsage()) {
 					fsi = f;
 					usage = (int) f.getUsage();
 				}
 			}
 		}
-		//TODO: credits abziehen
-		
-		//create response
-		DownloadTicket dt = new DownloadTicket(user,request.getFilename(), ChecksumUtils.generateChecksum(user, request.getFilename(), 0, /*file size*/request.getFilename().getBytes().length),fsi.getAddress(),fsi.getPort());
+		// TODO: credits abziehen
+
+		// create response
+		DownloadTicket dt = new DownloadTicket(user, request.getFilename(),
+				ChecksumUtils.generateChecksum(user, request.getFilename(), 0, /*
+																				 * file
+																				 * size
+																				 */
+						request.getFilename().getBytes().length),
+				fsi.getAddress(), fsi.getPort());
 		return new DownloadTicketResponse(dt);
 	}
 
@@ -196,10 +202,10 @@ public class ProxyImpl implements IProxy, Closeable {
 	public MessageResponse logout() throws IOException {
 		if (!loggedin)
 			return new MessageResponse("You have to log in");
-		for(UserInfo u :users){
-			if(u.getName().equals(user)){
+		for (UserInfo u : users) {
+			if (u.getName().equals(user)) {
 				users.remove(u);
-				users.add(new UserInfo(user,creditscount,false));
+				users.add(new UserInfo(user, creditscount, false));
 				break;
 			}
 		}
