@@ -27,40 +27,34 @@ public class ProxyImpl implements IProxy, Closeable {
 	// thread pool
 	private ExecutorService threads = Executors.newCachedThreadPool();
 
-	private ServerListener s_listener;
+	private ServerListenerUDP s_listener;
 
-	private ClientListener c_listener;
+	private ClientListenerTCP c_listener;
 
 	private String user;
 	private long creditscount;
 
 	private boolean loggedin;
+	private ProxyCli proxycli;
+	private ServerSenderTCP ss;
 
 	private ArrayList<UserInfo> users = new ArrayList<UserInfo>();
 
-	public ProxyImpl(Config config) throws SocketException {
+	public ProxyImpl(Config config, ProxyCli proxycli) throws SocketException {
 		this.config = config;
 		this.userconfig = new Config("user");
-
-		// thread pool for the servers
-		this.s_listener = new ServerListener(this.config);
-		this.threads.execute(this.s_listener);
-		// thread pool for the client
-		this.c_listener = new ClientListener(this.config, this);
-		this.threads.execute(this.c_listener);
-
+		this.proxycli = proxycli;
+		// // thread pool for the servers
+		// this.s_listener = new ServerListener(this.config);
+		// this.threads.execute(this.s_listener);
+		// // thread pool for the client
+		// this.c_listener = new ClientListener(this.config, this);
+		// this.threads.execute(this.c_listener);
+		this.s_listener = proxycli.getServerListener();
 		this.creditscount = 0;
 		this.user = "";
 		this.loggedin = false;
 
-	}
-
-	public ProxyImpl() {
-		this.config = new Config("Proxy");
-		this.userconfig = new Config("user");
-		this.creditscount = 0;
-		this.user = "";
-		this.loggedin = false;
 	}
 
 	@Override
@@ -95,6 +89,7 @@ public class ProxyImpl implements IProxy, Closeable {
 				creditscount = userconfig.getInt(user + ".credits");
 				UserInfo ui = new UserInfo(user, creditscount, true);
 				users.add(ui);
+				proxycli.setUsers(users);
 			}
 			// if it does exist, update the online status
 			else {
@@ -103,6 +98,7 @@ public class ProxyImpl implements IProxy, Closeable {
 						creditscount = u.getCredits();
 						users.remove(u);
 						users.add(new UserInfo(user, creditscount, true));
+						proxycli.setUsers(users);
 						break;
 					}
 				}
@@ -132,6 +128,7 @@ public class ProxyImpl implements IProxy, Closeable {
 			if (u.getName().equals(user)) {
 				users.remove(u);
 				users.add(new UserInfo(user, creditscount, true));
+				proxycli.setUsers(users);
 				break;
 			}
 		}
@@ -144,51 +141,65 @@ public class ProxyImpl implements IProxy, Closeable {
 		if (!loggedin)
 			return new MessageResponse("You have to log in");
 
+		ServerSenderTCP ss = new ServerSenderTCP(proxycli.getOnlineServer()
+				.getAddress(), proxycli.getOnlineServer().getPort());
+		ListResponse res = (ListResponse) ss.send(new ListRequest());
+
 		// TODO: wie bekommt man die files?
-		ArrayList<FileServerInfo> fsi = s_listener.getServers();
-		Set<String> names = new HashSet<String>();
-		for (FileServerInfo f : fsi) {
-			names.add("" + f.getPort());
-		}
-		return new ListResponse(names);
+		// ArrayList<FileServerInfo> fsi = s_listener.getServers();
+		// Set<String> names = new HashSet<String>();
+		// for (FileServerInfo f : fsi) {
+		// names.add("" + f.getPort());
+		// }
+		return res;
 	}
 
 	@Override
 	public Response download(DownloadTicketRequest request) throws IOException {
+		// TODO no file servers available
 		if (!loggedin)
 			return new MessageResponse("You have to log in");
 
 		ArrayList<FileServerInfo> files = s_listener.getServers();
+		String filename = request.getFilename();
 
-		// TODO: name gueltig! woher die liste?? siehe list()
-		// if(filelist.contains(request.getFilename()){
-		// return new MessageResponse("Invalid file name");
-		// }
-		// TODO: genug credits
-		// if(file.getBytes().length < creditscount){
-		// return new MessageResponse("Not enough credits available");
-		// }
-		// which server
-		int usage = 0;
-		FileServerInfo fsi = new FileServerInfo(null, 0, 0, false);
-		for (FileServerInfo f : files) {
-			if (f.isOnline()) {
-				if (usage >= f.getUsage()) {
-					fsi = f;
-					usage = (int) f.getUsage();
+		// no servers online
+		if (!proxycli.checkOnline()) {
+			return new MessageResponse("No servers online");
+		}
+
+		// get list of names
+		FileServerInfo server = proxycli.getOnlineServer();
+		ss = new ServerSenderTCP(server.getAddress(),
+				server.getPort());
+		ListResponse lres = (ListResponse) ss.send(new ListRequest());
+		Set<String> names = lres.getFileNames();
+		if (!names.contains(filename)) {
+			return new MessageResponse("Invalid file name");
+		}
+
+		// check credits and reduce them
+		InfoResponse ires = (InfoResponse) ss.send(new InfoRequest(filename));
+		if (ires.getSize() > creditscount) {
+			return new MessageResponse("Not enough credits available");
+		} else{
+			creditscount -= ires.getSize();
+			for (UserInfo u : users) {
+				if (u.getName().equals(user)) {
+					users.remove(u);
+					users.add(new UserInfo(user, creditscount, true));
+					proxycli.setUsers(users);
+					break;
 				}
 			}
 		}
-		// TODO: credits abziehen
-
+		
+		VersionResponse vres = (VersionResponse) ss.send(new VersionRequest(filename));
+		String csum = ChecksumUtils.generateChecksum(user, filename, vres.getVersion(), ires.getSize());
+		
 		// create response
-		DownloadTicket dt = new DownloadTicket(user, request.getFilename(),
-				ChecksumUtils.generateChecksum(user, request.getFilename(), 0, /*
-																				 * file
-																				 * size
-																				 */
-						request.getFilename().getBytes().length),
-				fsi.getAddress(), fsi.getPort());
+		DownloadTicket dt = new DownloadTicket(user,filename,csum,server.getAddress(),server.getPort());
+		
 		return new DownloadTicketResponse(dt);
 	}
 
@@ -206,6 +217,7 @@ public class ProxyImpl implements IProxy, Closeable {
 			if (u.getName().equals(user)) {
 				users.remove(u);
 				users.add(new UserInfo(user, creditscount, false));
+				proxycli.setUsers(users);
 				break;
 			}
 		}
@@ -218,18 +230,12 @@ public class ProxyImpl implements IProxy, Closeable {
 
 	@Override
 	public void close() throws IOException {
+		ss.close();
 		threads.shutdownNow();
 		c_listener.close();
 		s_listener.close();
+		
 
-	}
-
-	public Response fileservers() {
-		return new FileServerInfoResponse(s_listener.getServers());
-	}
-
-	public Response users() {
-		return new UserInfoResponse(users);
 	}
 
 }

@@ -50,7 +50,6 @@ public class ProxySenderUDP implements Closeable {
 									.getString("proxy.host")),
 							config.getInt("proxy.udp.port"));
 					socket.send(packet);
-					System.out.println("send");
 				} catch (IOException e1) {
 					e1.printStackTrace();
 				}

@@ -1,12 +1,16 @@
 package client;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.SocketException;
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import proxy.ServerListener;
+import proxy.ServerListenerUDP;
 import util.Config;
 import cli.Command;
 import cli.Shell;
@@ -14,6 +18,7 @@ import cli.Shell;
 import message.Response;
 import message.request.*;
 import message.response.*;
+import model.DownloadTicket;
 import model.FileServerInfo;
 import model.UserInfo;
 
@@ -24,7 +29,8 @@ public class ClientCli implements IClientCli {
 
 	// thread pool
 	private ExecutorService threads = Executors.newCachedThreadPool();
-	private ProxySenderTCP sender;
+	private ProxySenderTCP psender;	
+	private ServerSenderTCP ssender;
 
 	public ClientCli(Config config, Shell shell) throws SocketException {
 		this.config = config;
@@ -34,7 +40,7 @@ public class ClientCli implements IClientCli {
 		this.shell.register(this);
 		this.threads.execute(this.shell);
 
-		sender = new ProxySenderTCP(config);
+		psender = new ProxySenderTCP(config);
 
 	}
 
@@ -43,7 +49,7 @@ public class ClientCli implements IClientCli {
 	public LoginResponse login(String username, String password)
 			throws IOException {
 		LoginRequest lreq = new LoginRequest(username,password);
-		LoginResponse lres = (LoginResponse) sender.send(lreq);
+		LoginResponse lres = (LoginResponse) psender.send(lreq);
 		return lres;
 	}
 
@@ -51,7 +57,7 @@ public class ClientCli implements IClientCli {
 	@Command
 	public Response credits() throws IOException {
 		CreditsRequest creq = new CreditsRequest();
-		Response res = sender.send(creq);
+		Response res = psender.send(creq);
 		return res;
 	}
 
@@ -59,7 +65,7 @@ public class ClientCli implements IClientCli {
 	@Command
 	public Response buy(long credits) throws IOException {
 		BuyRequest breq = new BuyRequest(credits);
-		Response res = sender.send(breq);
+		Response res = psender.send(breq);
 		return res;
 	}
 
@@ -67,21 +73,50 @@ public class ClientCli implements IClientCli {
 	@Command
 	public Response list() throws IOException {
 		ListRequest lreq = new ListRequest();
-		Response res = sender.send(lreq);
+		Response res = psender.send(lreq);
 		return res;
 	}
 
 	@Override
 	@Command
 	public Response download(String filename) throws IOException {
-		DownloadTicketRequest dreq = new DownloadTicketRequest(filename);
-		DownloadTicketResponse dres = (DownloadTicketResponse) sender.send(dreq);
+		DownloadTicketRequest dtreq = new DownloadTicketRequest(filename);
+		Object res = psender.send(dtreq);
+		DownloadTicketResponse dtres;
+		if(res instanceof DownloadTicketResponse){
+			dtres = (DownloadTicketResponse) res;
+		} else{
+			return (Response) res;
+		}
+		//TODO: download 2mal - kommt ins else!
 		
 		
 		//TODO: download process
+		//verbindung zum Server
+		DownloadTicket dt = dtres.getTicket();
+		DownloadFileRequest dfreq = new DownloadFileRequest(dt);
+		ssender = new ServerSenderTCP(dt.getAddress(), dt.getPort());
+		DownloadFileResponse dfres = (DownloadFileResponse) ssender.send(dfreq);
 		
+		//create file
+		String dir = config.getString("download.dir");
 		
-		return null;
+		//first delete existing file
+		File file = new File(dir);
+		File[] files = file.listFiles();
+
+		for (File f : files) {
+			if (f.isFile()) {
+				if(f.getName().equals(dfres.getTicket().getFilename())){
+					f.delete();
+				}
+			}
+		}
+		FileOutputStream out = new FileOutputStream(dir+"/"+dfres.getTicket().getFilename());
+        out.write(dfres.getContent());
+        out.close(); 
+        
+		return dfres;
 	}
 
 	@Override
@@ -95,17 +130,17 @@ public class ClientCli implements IClientCli {
 	@Command
 	public MessageResponse logout() throws IOException {
 		LogoutRequest lreq = new LogoutRequest();
-		MessageResponse mres = (MessageResponse) sender.send(lreq);
+		MessageResponse mres = (MessageResponse) psender.send(lreq);
 		return mres;
 	}
 
 	@Override
 	@Command
 	public MessageResponse exit() throws IOException {
-		sender.send(new LogoutRequest());
+		psender.send(new LogoutRequest());
 		threads.shutdown();
 		shell.close();
-		sender.close();
+		psender.close();
 		return null;
 	}
 

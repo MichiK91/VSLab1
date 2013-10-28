@@ -7,7 +7,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import proxy.ProxyImpl;
-import proxy.ServerListener;
+import proxy.ServerListenerUDP;
 import util.Config;
 
 import message.response.FileServerInfoResponse;
@@ -25,6 +25,8 @@ public class FileServerCli implements IFileServerCli {
 	private ExecutorService threads = Executors.newCachedThreadPool();
 
 	private FileServerImpl fileserver;
+
+	private TCPHandler handler;
 	
 	public FileServerCli(Config config,Shell shell) throws SocketException{
 		this.shell = shell;
@@ -35,6 +37,9 @@ public class FileServerCli implements IFileServerCli {
 		
 		fileserver = new FileServerImpl(config);
 		
+		this.handler = new TCPHandler(config);
+		this.threads.execute(this.handler);
+		
 	}
 	
 	
@@ -44,6 +49,7 @@ public class FileServerCli implements IFileServerCli {
 		threads.shutdownNow();
 		shell.close();
 		fileserver.close();
+		handler.close();
 		
 		return null;
 	}

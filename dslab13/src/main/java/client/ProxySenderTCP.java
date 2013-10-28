@@ -20,6 +20,7 @@ public class ProxySenderTCP implements Closeable {
 	
 	public ProxySenderTCP(Config config){
 		this.config = config;
+		
 	}
 	
 	private void connect(){

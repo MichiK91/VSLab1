@@ -10,39 +10,32 @@ import java.util.concurrent.Executors;
 import util.Config;
 import your.Proxy;
 
-public class ClientAccept implements Runnable, Closeable {
+public class ClientAccept {
 	
 	private ExecutorService threads;
 	private ServerSocket s;
 	private Config config;
+	private ProxyCli proxycli;
 	
-	public ClientAccept(Config config){
+	public ClientAccept(Config config, ProxyCli proxycl){
 		this.config = config;
-		try {
-			this.s = new ServerSocket(config.getInt("tcp.port"));
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+		this.proxycli = proxycli;
+		this.s = s;
 		threads = Executors.newCachedThreadPool();
+		run();
 	}
-	@Override
 	public void run() {
 		 
-//		while(true){
-//			try {
-//				threads.execute(new ClientListener(s.accept(),config));
-//			} catch (SocketException e) {
-//				e.printStackTrace();
-//			} catch (IOException e) {
-//				e.printStackTrace();
-//			}
-//		}
+		while(true){
+			try {
+				ClientListenerTCP cl = new ClientListenerTCP(config,proxycli);
+				threads.execute(cl);
+			} catch (Exception e) {
+				threads.shutdown();
+				e.printStackTrace();
+			}
+		}
 		
-	}
-	@Override
-	public void close() throws IOException {
-		s.close();
-		threads.shutdown();
 	}
 
 }
