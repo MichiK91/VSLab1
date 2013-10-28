@@ -20,31 +20,33 @@ public class ProxySenderTCP implements Closeable {
 	
 	public ProxySenderTCP(Config config){
 		this.config = config;
+		connect();
 		
 	}
 	
 	private void connect(){
 		try {
 			socket = new Socket(InetAddress.getByName(config.getString("proxy.host")), config.getInt("proxy.tcp.port"));
+			strout = new ObjectOutputStream(socket.getOutputStream());
+			strin = new ObjectInputStream(socket.getInputStream());
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 	}
 	
 	public Response send(Request req) throws IOException{
-		connect();
+		//connect();
 		//send request
-		strout = new ObjectOutputStream(socket.getOutputStream());
+		
 		strout.writeObject(req); 
 		//get response
-		strin = new ObjectInputStream(socket.getInputStream());
 		Response res = null;
 		try {
 			res = (Response) strin.readObject();
 		} catch (ClassNotFoundException e) {
 			e.printStackTrace();
 		}
-		close();
+		//close();
 		return res;
 	}
 

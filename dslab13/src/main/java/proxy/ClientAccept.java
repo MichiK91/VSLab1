@@ -17,10 +17,15 @@ public class ClientAccept {
 	private Config config;
 	private ProxyCli proxycli;
 	
-	public ClientAccept(Config config, ProxyCli proxycl){
+	public ClientAccept(Config config, ProxyCli proxycli){
 		this.config = config;
 		this.proxycli = proxycli;
-		this.s = s;
+		try {
+			this.s = new ServerSocket(config.getInt("tcp.port"));
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		threads = Executors.newCachedThreadPool();
 		run();
 	}
@@ -28,7 +33,7 @@ public class ClientAccept {
 		 
 		while(true){
 			try {
-				ClientListenerTCP cl = new ClientListenerTCP(config,proxycli);
+				ClientListenerTCP cl = new ClientListenerTCP(s.accept(),proxycli);
 				threads.execute(cl);
 			} catch (Exception e) {
 				threads.shutdown();

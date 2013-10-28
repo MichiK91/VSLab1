@@ -24,7 +24,6 @@ public class ProxyCli implements IProxyCli {
 	private Shell shell;
 	private Config config;
 	private ServerListenerUDP s_listener;
-	private ClientListenerTCP c_listener;
 	private ClientAccept c_accept;
 	private ServerSocket s;
 	
@@ -37,21 +36,23 @@ public class ProxyCli implements IProxyCli {
 	public ProxyCli(Config config, Shell shell) throws SocketException {
 		this.shell = shell;
 		this.config = config;
+		
 		// register the shell
 		this.shell.register(this);
 		this.threads.execute(this.shell);
+		
 		// thread pool for the servers
 		this.s_listener = new ServerListenerUDP(this.config);
 		this.threads.execute(this.s_listener);
+		
 		// thread pool for the client
-		this.c_listener = new ClientListenerTCP(this.config, this);
-		this.threads.execute(this.c_listener);
-		//proxy = new ProxyImpl(config);
-		
-		//this.c_accept = new ClientAccept(this.config, this,s);
-		
-		
+		//this.c_listener = new ClientListenerTCP(this.config, this);
+		//this.threads.execute(this.c_listener);
+
 		this.users = new ArrayList<UserInfo>();
+		this.c_accept = new ClientAccept(this.config, this);
+		
+		
 	}
 
 	@Override
@@ -78,9 +79,20 @@ public class ProxyCli implements IProxyCli {
 	public ServerListenerUDP getServerListener(){
 		return s_listener;
 	}
-	public void setUsers(ArrayList<UserInfo> users){
-		this.users = users;
+//	public void setUsers(ArrayList<UserInfo> users){
+//		this.users = users;
+//	}
+	
+	public void add(UserInfo user){
+		users.add(user);
 	}
+	public void remove(UserInfo user){
+		users.remove(user);
+	}
+	public ArrayList<UserInfo> getUserList(){
+		return users;
+	}
+	
 	public FileServerInfo getOnlineServer(){
 		FileServerInfo server = new FileServerInfo(null, 0, 0, false);
 		int usage = Integer.MAX_VALUE;

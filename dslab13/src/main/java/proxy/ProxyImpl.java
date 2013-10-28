@@ -24,8 +24,6 @@ public class ProxyImpl implements IProxy, Closeable {
 	private Config config;
 	private Config userconfig;
 
-	// thread pool
-	private ExecutorService threads = Executors.newCachedThreadPool();
 
 	private ServerListenerUDP s_listener;
 
@@ -38,7 +36,7 @@ public class ProxyImpl implements IProxy, Closeable {
 	private ProxyCli proxycli;
 	private ServerSenderTCP ss;
 
-	private ArrayList<UserInfo> users = new ArrayList<UserInfo>();
+	//private ArrayList<UserInfo> users = new ArrayList<UserInfo>();
 
 	public ProxyImpl(Config config, ProxyCli proxycli) throws SocketException {
 		this.config = config;
@@ -79,7 +77,7 @@ public class ProxyImpl implements IProxy, Closeable {
 		if (pw.equals(confpw)) {
 			boolean old = false;
 			// does the name already exist?
-			for (UserInfo u : users) {
+			for (UserInfo u : proxycli.getUserList()) {
 				if (u.getName().equals(user))
 					old = true;
 			}
@@ -88,17 +86,20 @@ public class ProxyImpl implements IProxy, Closeable {
 			if (!old) {
 				creditscount = userconfig.getInt(user + ".credits");
 				UserInfo ui = new UserInfo(user, creditscount, true);
-				users.add(ui);
-				proxycli.setUsers(users);
+				proxycli.add(ui);
+				//proxycli.setUsers(users);
 			}
 			// if it does exist, update the online status
 			else {
-				for (UserInfo u : users) {
-					if (u.getName().equals(user)) {
+				for (UserInfo u : proxycli.getUserList()) {
+					//user already in list as online (other client)
+					if(u.isOnline() == true){
+						return new LoginResponse(LoginResponse.Type.WRONG_CREDENTIALS);
+					}else if (u.getName().equals(user)) {
 						creditscount = u.getCredits();
-						users.remove(u);
-						users.add(new UserInfo(user, creditscount, true));
-						proxycli.setUsers(users);
+						proxycli.remove(u);
+						proxycli.add(new UserInfo(user, creditscount, true));
+						//proxycli.setUsers(users);
 						break;
 					}
 				}
@@ -124,11 +125,11 @@ public class ProxyImpl implements IProxy, Closeable {
 		if (!loggedin)
 			return new MessageResponse("You have to log in");
 		creditscount += credits.getCredits();
-		for (UserInfo u : users) {
+		for (UserInfo u : proxycli.getUserList()) {
 			if (u.getName().equals(user)) {
-				users.remove(u);
-				users.add(new UserInfo(user, creditscount, true));
-				proxycli.setUsers(users);
+				proxycli.remove(u);
+				proxycli.add(new UserInfo(user, creditscount, true));
+				//proxycli.setUsers(users);
 				break;
 			}
 		}
@@ -145,12 +146,7 @@ public class ProxyImpl implements IProxy, Closeable {
 				.getAddress(), proxycli.getOnlineServer().getPort());
 		ListResponse res = (ListResponse) ss.send(new ListRequest());
 
-		// TODO: wie bekommt man die files?
-		// ArrayList<FileServerInfo> fsi = s_listener.getServers();
-		// Set<String> names = new HashSet<String>();
-		// for (FileServerInfo f : fsi) {
-		// names.add("" + f.getPort());
-		// }
+		
 		return res;
 	}
 
@@ -184,11 +180,11 @@ public class ProxyImpl implements IProxy, Closeable {
 			return new MessageResponse("Not enough credits available");
 		} else{
 			creditscount -= ires.getSize();
-			for (UserInfo u : users) {
+			for (UserInfo u : proxycli.getUserList()) {
 				if (u.getName().equals(user)) {
-					users.remove(u);
-					users.add(new UserInfo(user, creditscount, true));
-					proxycli.setUsers(users);
+					proxycli.remove(u);
+					proxycli.add(new UserInfo(user, creditscount, true));
+					//proxycli.setUsers(users);
 					break;
 				}
 			}
@@ -213,11 +209,11 @@ public class ProxyImpl implements IProxy, Closeable {
 	public MessageResponse logout() throws IOException {
 		if (!loggedin)
 			return new MessageResponse("You have to log in");
-		for (UserInfo u : users) {
+		for (UserInfo u : proxycli.getUserList()) {
 			if (u.getName().equals(user)) {
-				users.remove(u);
-				users.add(new UserInfo(user, creditscount, false));
-				proxycli.setUsers(users);
+				proxycli.remove(u);
+				proxycli.add(new UserInfo(user, creditscount, false));
+				//proxycli.setUsers(users);
 				break;
 			}
 		}
@@ -231,7 +227,6 @@ public class ProxyImpl implements IProxy, Closeable {
 	@Override
 	public void close() throws IOException {
 		ss.close();
-		threads.shutdownNow();
 		c_listener.close();
 		s_listener.close();
 		
