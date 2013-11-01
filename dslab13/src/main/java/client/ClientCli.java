@@ -1,16 +1,13 @@
 package client;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.net.SocketException;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Set;
+import java.net.UnknownHostException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import proxy.ServerListenerUDP;
 import util.Config;
 import cli.Command;
 import cli.Shell;
@@ -19,8 +16,6 @@ import message.Response;
 import message.request.*;
 import message.response.*;
 import model.DownloadTicket;
-import model.FileServerInfo;
-import model.UserInfo;
 
 public class ClientCli implements IClientCli {
 
@@ -31,16 +26,25 @@ public class ClientCli implements IClientCli {
 	private ExecutorService threads = Executors.newCachedThreadPool();
 	private ProxySenderTCP psender;	
 	private ServerSenderTCP ssender;
+	
+	boolean login;
 
-	public ClientCli(Config config, Shell shell) throws SocketException {
+	public ClientCli(Config config, Shell shell) throws IOException {
 		this.config = config;
 		this.shell = shell;
+		this.login = false;
 
 		// register the shell
 		this.shell.register(this);
 		this.threads.execute(this.shell);
 
-		psender = new ProxySenderTCP(config);
+		try {
+			psender = new ProxySenderTCP(config);
+		} catch (UnknownHostException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			exit();
+		}
 
 	}
 
@@ -50,6 +54,9 @@ public class ClientCli implements IClientCli {
 			throws IOException {
 		LoginRequest lreq = new LoginRequest(username,password);
 		LoginResponse lres = (LoginResponse) psender.send(lreq);
+		if(lres.getType().equals(LoginResponse.Type.SUCCESS)){
+			login = true;
+		}
 		return lres;
 	}
 
@@ -88,11 +95,9 @@ public class ClientCli implements IClientCli {
 		} else{
 			return (Response) res;
 		}
-		//TODO: download 2mal - kommt ins else!
 		
 		
-		//TODO: download process
-		//verbindung zum Server
+		//connection to server
 		DownloadTicket dt = dtres.getTicket();
 		DownloadFileRequest dfreq = new DownloadFileRequest(dt);
 		ssender = new ServerSenderTCP(dt.getAddress(), dt.getPort());
@@ -122,8 +127,35 @@ public class ClientCli implements IClientCli {
 	@Override
 	@Command
 	public MessageResponse upload(String filename) throws IOException {
-		// TODO Auto-generated method stub
-		return null;
+		String dir = config.getString("download.dir");
+		
+		File file = new File(dir);
+		File[] files = file.listFiles();
+		byte[] content = null;
+		
+		for (File f : files) {
+			if (f.isFile()) {
+				if(f.getName().equals(filename)){
+					//read content
+					FileInputStream in = new FileInputStream(f);
+					String s = "";
+					while(true){
+						int read = in.read();
+						if(read == -1){
+							break;
+						} else{
+							char c = (char) read;
+				            s += c; 
+						}
+					}
+					content = s.getBytes();
+					in.close();
+				}
+			}
+		}
+		UploadRequest ureq = new UploadRequest(filename, 1, content);
+		MessageResponse res = (MessageResponse) psender.send(ureq);
+		return res;
 	}
 
 	@Override
@@ -131,16 +163,19 @@ public class ClientCli implements IClientCli {
 	public MessageResponse logout() throws IOException {
 		LogoutRequest lreq = new LogoutRequest();
 		MessageResponse mres = (MessageResponse) psender.send(lreq);
+		login = false;
 		return mres;
 	}
 
 	@Override
 	@Command
 	public MessageResponse exit() throws IOException {
-		psender.send(new LogoutRequest());
-		threads.shutdown();
+		if(login)
+			logout();
+		if(psender != null)
+			psender.close();
 		shell.close();
-		psender.close();
+		threads.shutdown();
 		return null;
 	}
 

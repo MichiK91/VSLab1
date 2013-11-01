@@ -3,6 +3,7 @@ package server;
 import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.SocketException;
 import java.util.HashSet;
@@ -19,7 +20,7 @@ public class FileServerImpl implements IFileServer, Closeable {
 	private Config config;
 	private ProxySenderUDP sender;
 
-	public FileServerImpl(Config config) throws SocketException {
+	public FileServerImpl(Config config) {
 		this.config = config;
 		this.sender = new ProxySenderUDP(this.config);
 
@@ -44,20 +45,20 @@ public class FileServerImpl implements IFileServer, Closeable {
 		File file = new File(config.getString("fileserver.dir"));
 		File[] files = file.listFiles();
 		byte[] content = null;
-		
+
 		for (File f : files) {
 			if (f.isFile()) {
-				if(f.getName().equals(request.getTicket().getFilename())){
-					//read content
+				if (f.getName().equals(request.getTicket().getFilename())) {
+					// read content
 					FileInputStream in = new FileInputStream(f);
 					String s = "";
-					while(true){
+					while (true) {
 						int read = in.read();
-						if(read == -1){
+						if (read == -1) {
 							break;
-						} else{
+						} else {
 							char c = (char) read;
-				            s += c; 
+							s += c;
 						}
 					}
 					content = s.getBytes();
@@ -74,15 +75,15 @@ public class FileServerImpl implements IFileServer, Closeable {
 		File file = new File(config.getString("fileserver.dir"));
 		File[] files = file.listFiles();
 		long size = 0;
-		
+
 		for (File f : files) {
 			if (f.isFile()) {
-				if(f.getName().equals(request.getFilename())){
+				if (f.getName().equals(request.getFilename())) {
 					size = f.length();
 				}
 			}
 		}
-		
+
 		return new InfoResponse(name, size);
 	}
 
@@ -92,21 +93,38 @@ public class FileServerImpl implements IFileServer, Closeable {
 		File file = new File(config.getString("fileserver.dir"));
 		File[] files = file.listFiles();
 		int version = 0;
-		
+
 		for (File f : files) {
 			if (f.isFile()) {
-				if(f.getName().equals(request.getFilename())){
+				if (f.getName().equals(request.getFilename())) {
 					version = 1;
 				}
 			}
 		}
-		return new VersionResponse(name,version);
+		return new VersionResponse(name, version);
 	}
 
 	@Override
 	public MessageResponse upload(UploadRequest request) throws IOException {
-		// TODO Auto-generated method stub
-		return null;
+		
+		// first delete existing file
+		String dir = config.getString("fileserver.dir");
+		File file = new File(dir);
+		File[] files = file.listFiles();
+
+		for (File f : files) {
+			if (f.isFile()) {
+				if (f.getName().equals(request.getFilename())) {
+					f.delete();
+				}
+			}
+		}
+		
+		FileOutputStream out = new FileOutputStream(dir + "/"
+				+ request.getFilename());
+		out.write(request.getContent());
+		out.close();
+		return new MessageResponse("successfully uploaded");
 	}
 
 	@Override

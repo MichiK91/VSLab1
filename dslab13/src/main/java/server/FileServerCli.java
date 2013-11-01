@@ -46,10 +46,11 @@ public class FileServerCli implements IFileServerCli {
 	@Override
 	@Command
 	public MessageResponse exit() throws IOException {
-		threads.shutdownNow();
-		shell.close();
 		fileserver.close();
 		handler.close();
+
+		shell.close();
+		threads.shutdownNow();
 		
 		return null;
 	}

@@ -17,36 +17,42 @@ public class ProxySenderTCP implements Closeable {
 	private Socket socket;
 	private ObjectOutputStream strout;
 	private ObjectInputStream strin;
-	
-	public ProxySenderTCP(Config config){
+
+	public ProxySenderTCP(Config config) throws UnknownHostException,
+			IOException {
 		this.config = config;
 		connect();
-		
+
 	}
-	
-	private void connect(){
+
+	public void connect() throws UnknownHostException, IOException {
+		socket = new Socket(InetAddress.getByName(config
+				.getString("proxy.host")), config.getInt("proxy.tcp.port"));
+
+		strout = new ObjectOutputStream(socket.getOutputStream());
+		strin = new ObjectInputStream(socket.getInputStream());
+	}
+
+	public Response send(Request req) {
+		
+		// send request
 		try {
-			socket = new Socket(InetAddress.getByName(config.getString("proxy.host")), config.getInt("proxy.tcp.port"));
-			strout = new ObjectOutputStream(socket.getOutputStream());
-			strin = new ObjectInputStream(socket.getInputStream());
-		} catch (IOException e) {
-			e.printStackTrace();
+			strout.writeObject(req);
+		} catch (IOException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
 		}
-	}
-	
-	public Response send(Request req) throws IOException{
-		//connect();
-		//send request
-		
-		strout.writeObject(req); 
-		//get response
+
+		// get response
 		Response res = null;
 		try {
 			res = (Response) strin.readObject();
 		} catch (ClassNotFoundException e) {
 			e.printStackTrace();
+		} catch (IOException e) {
+			//proxy already closed
+			//e.printStackTrace();
 		}
-		//close();
 		return res;
 	}
 

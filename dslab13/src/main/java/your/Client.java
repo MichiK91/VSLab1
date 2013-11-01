@@ -1,11 +1,7 @@
 package your;
 
-import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.io.InputStreamReader;
-import java.io.PrintStream;
-import java.net.Socket;
 
 import util.ComponentFactory;
 import util.Config;
@@ -24,7 +20,6 @@ public class Client {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		
 		/*try {
 			Socket s = new Socket("localhost", 9000);
 			PrintStream os = new PrintStream(s.getOutputStream());

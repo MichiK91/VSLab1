@@ -24,11 +24,6 @@ public class ProxyImpl implements IProxy, Closeable {
 	private Config config;
 	private Config userconfig;
 
-
-	private ServerListenerUDP s_listener;
-
-	private ClientListenerTCP c_listener;
-
 	private String user;
 	private long creditscount;
 
@@ -36,9 +31,9 @@ public class ProxyImpl implements IProxy, Closeable {
 	private ProxyCli proxycli;
 	private ServerSenderTCP ss;
 
-	//private ArrayList<UserInfo> users = new ArrayList<UserInfo>();
+	// private ArrayList<UserInfo> users = new ArrayList<UserInfo>();
 
-	public ProxyImpl(Config config, ProxyCli proxycli) throws SocketException {
+	public ProxyImpl(Config config, ProxyCli proxycli) {
 		this.config = config;
 		this.userconfig = new Config("user");
 		this.proxycli = proxycli;
@@ -47,8 +42,8 @@ public class ProxyImpl implements IProxy, Closeable {
 		// this.threads.execute(this.s_listener);
 		// // thread pool for the client
 		// this.c_listener = new ClientListener(this.config, this);
-		// this.threads.execute(this.c_listener);
-		this.s_listener = proxycli.getServerListener();
+		// this.threads.execute(this.c_istener();listener);
+		// this.s_listener = proxycli.getServerL
 		this.creditscount = 0;
 		this.user = "";
 		this.loggedin = false;
@@ -57,49 +52,41 @@ public class ProxyImpl implements IProxy, Closeable {
 
 	@Override
 	public LoginResponse login(LoginRequest request) throws IOException {
+		// user already logged in on this client
 		if (loggedin) {
 			return new LoginResponse(LoginResponse.Type.WRONG_CREDENTIALS);
 		}
 
-		// TODO: anders den Usernamen bekommen
 		user = request.getUsername();
 		String pw = request.getPassword();
-		// TODO: wie kann ich die pw vergleichen? dazu brauch ich alle namen,
-		// die regestriert sind. Maxi: reg ausdrücke, um nur an die zahlen im
-		// config zu kommen
 		String confpw = "";
-		try {
-			confpw = "" + userconfig.getString(user + ".password");
-		} catch (Exception e) {
+
+		boolean exist = false;
+		// get password from config
+		for (UserInfo u : proxycli.getUserList()) {
+			if (user.equals(u.getName())) {
+				confpw = "" + userconfig.getString(user + ".password");
+				exist = true;
+				break;
+			}
+		}
+		// delivered user does not exist
+		if (!exist) {
 			return new LoginResponse(LoginResponse.Type.WRONG_CREDENTIALS);
 		}
 
 		if (pw.equals(confpw)) {
-			boolean old = false;
-			// does the name already exist?
 			for (UserInfo u : proxycli.getUserList()) {
-				if (u.getName().equals(user))
-					old = true;
-			}
-
-			// if not, add it to the users
-			if (!old) {
-				creditscount = userconfig.getInt(user + ".credits");
-				UserInfo ui = new UserInfo(user, creditscount, true);
-				proxycli.add(ui);
-				//proxycli.setUsers(users);
-			}
-			// if it does exist, update the online status
-			else {
-				for (UserInfo u : proxycli.getUserList()) {
-					//user already in list as online (other client)
-					if(u.isOnline() == true){
-						return new LoginResponse(LoginResponse.Type.WRONG_CREDENTIALS);
-					}else if (u.getName().equals(user)) {
+				if (u.getName().equals(user)) {
+					// user already in list as online (other client)
+					if (u.isOnline() == true) {
+						return new LoginResponse(
+								LoginResponse.Type.WRONG_CREDENTIALS);
+					} else if (u.getName().equals(user)) {
+						// change online status
 						creditscount = u.getCredits();
-						proxycli.remove(u);
-						proxycli.add(new UserInfo(user, creditscount, true));
-						//proxycli.setUsers(users);
+						proxycli.removeUser(u);
+						proxycli.addUser(new UserInfo(user, creditscount, true));
 						break;
 					}
 				}
@@ -108,6 +95,7 @@ public class ProxyImpl implements IProxy, Closeable {
 			loggedin = true;
 			return new LoginResponse(LoginResponse.Type.SUCCESS);
 		} else {
+			// wrong password
 			user = "";
 			return new LoginResponse(LoginResponse.Type.WRONG_CREDENTIALS);
 		}
@@ -127,9 +115,9 @@ public class ProxyImpl implements IProxy, Closeable {
 		creditscount += credits.getCredits();
 		for (UserInfo u : proxycli.getUserList()) {
 			if (u.getName().equals(user)) {
-				proxycli.remove(u);
-				proxycli.add(new UserInfo(user, creditscount, true));
-				//proxycli.setUsers(users);
+				proxycli.removeUser(u);
+				proxycli.addUser(new UserInfo(user, creditscount, true));
+				// proxycli.setUsers(users);
 				break;
 			}
 		}
@@ -139,24 +127,27 @@ public class ProxyImpl implements IProxy, Closeable {
 
 	@Override
 	public Response list() throws IOException {
+		// TODO: alle server durchgehn und alle files ausgeben. wenn server
+		// unterschiedliche. zur zeit nur den mit wenigsten gebrauch
 		if (!loggedin)
 			return new MessageResponse("You have to log in");
+		// no servers online
+		if (!proxycli.checkOnline()) 
+			return new MessageResponse("No servers online");
 
 		ServerSenderTCP ss = new ServerSenderTCP(proxycli.getOnlineServer()
 				.getAddress(), proxycli.getOnlineServer().getPort());
 		ListResponse res = (ListResponse) ss.send(new ListRequest());
 
-		
 		return res;
 	}
 
 	@Override
 	public Response download(DownloadTicketRequest request) throws IOException {
-		// TODO no file servers available
+
 		if (!loggedin)
 			return new MessageResponse("You have to log in");
 
-		ArrayList<FileServerInfo> files = s_listener.getServers();
 		String filename = request.getFilename();
 
 		// no servers online
@@ -166,8 +157,7 @@ public class ProxyImpl implements IProxy, Closeable {
 
 		// get list of names
 		FileServerInfo server = proxycli.getOnlineServer();
-		ss = new ServerSenderTCP(server.getAddress(),
-				server.getPort());
+		ss = new ServerSenderTCP(server.getAddress(), server.getPort());
 		ListResponse lres = (ListResponse) ss.send(new ListRequest());
 		Set<String> names = lres.getFileNames();
 		if (!names.contains(filename)) {
@@ -178,42 +168,78 @@ public class ProxyImpl implements IProxy, Closeable {
 		InfoResponse ires = (InfoResponse) ss.send(new InfoRequest(filename));
 		if (ires.getSize() > creditscount) {
 			return new MessageResponse("Not enough credits available");
-		} else{
+		} else {
 			creditscount -= ires.getSize();
+			// increase usage
+			proxycli.removeServer(server);
+			proxycli.addServer(new FileServerInfo(server.getAddress(), server
+					.getPort(), server.getUsage() + ires.getSize(), true));
 			for (UserInfo u : proxycli.getUserList()) {
 				if (u.getName().equals(user)) {
-					proxycli.remove(u);
-					proxycli.add(new UserInfo(user, creditscount, true));
-					//proxycli.setUsers(users);
+					proxycli.removeUser(u);
+					proxycli.addUser(new UserInfo(user, creditscount, true));
+					// proxycli.setUsers(users);
 					break;
 				}
 			}
 		}
-		
-		VersionResponse vres = (VersionResponse) ss.send(new VersionRequest(filename));
-		String csum = ChecksumUtils.generateChecksum(user, filename, vres.getVersion(), ires.getSize());
-		
+
+		VersionResponse vres = (VersionResponse) ss.send(new VersionRequest(
+				filename));
+		String csum = ChecksumUtils.generateChecksum(user, filename,
+				vres.getVersion(), ires.getSize());
+
 		// create response
-		DownloadTicket dt = new DownloadTicket(user,filename,csum,server.getAddress(),server.getPort());
-		
+		DownloadTicket dt = new DownloadTicket(user, filename, csum,
+				server.getAddress(), server.getPort());
+
 		return new DownloadTicketResponse(dt);
 	}
 
 	@Override
 	public MessageResponse upload(UploadRequest request) throws IOException {
-		// TODO Auto-generated method stub
-		return null;
+		if (!loggedin)
+			return new MessageResponse("You have to log in");
+
+		// check if any server is online
+		if (!proxycli.checkOnline())
+			return new MessageResponse(
+					"No servers online, failed to upload the file");
+
+		ServerSenderTCP sstcp;
+		ArrayList<FileServerInfo> servers = proxycli.getServerList();
+		MessageResponse ures = null;
+
+		for (FileServerInfo fs : servers) {
+			// get all servers, which are online and send each of them a
+			// uploadrequest
+			if (fs.isOnline()) {
+				sstcp = new ServerSenderTCP(fs.getAddress(), fs.getPort());
+				ures = (MessageResponse) sstcp.send(request);
+			}
+		}
+
+		// increase credits
+		for (UserInfo u : proxycli.getUserList()) {
+			if (user.equals(u.getName())) {
+				creditscount += 2 * (request.getContent().length);
+				proxycli.removeUser(u);
+				proxycli.addUser(new UserInfo(user, creditscount, true));
+			}
+		}
+
+		return ures;
 	}
 
 	@Override
-	public MessageResponse logout() throws IOException {
+	public synchronized MessageResponse logout() throws IOException {
 		if (!loggedin)
 			return new MessageResponse("You have to log in");
 		for (UserInfo u : proxycli.getUserList()) {
 			if (u.getName().equals(user)) {
-				proxycli.remove(u);
-				proxycli.add(new UserInfo(user, creditscount, false));
-				//proxycli.setUsers(users);
+				proxycli.removeUser(u);
+				proxycli.addUser(new UserInfo(user, creditscount, false));
+				// proxycli.setUsers(users);
 				break;
 			}
 		}
@@ -221,15 +247,13 @@ public class ProxyImpl implements IProxy, Closeable {
 		user = "";
 		loggedin = false;
 		creditscount = 0;
-		return new MessageResponse(log + " logged out");
+		return new MessageResponse("Successfully logged out.");
 	}
 
 	@Override
 	public void close() throws IOException {
-		ss.close();
-		c_listener.close();
-		s_listener.close();
-		
+		if(ss != null)
+			ss.close();
 
 	}
 

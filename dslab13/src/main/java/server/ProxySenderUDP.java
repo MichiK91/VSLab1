@@ -28,10 +28,15 @@ public class ProxySenderUDP implements Closeable {
 	private Timer timer;
 	
 
-	public ProxySenderUDP(Config config) throws SocketException {
+	public ProxySenderUDP(Config config) {
 		this.config = config;
 		this.info = "!alive " + this.config.getInt("tcp.port");
-		this.socket = new DatagramSocket();
+		try {
+			this.socket = new DatagramSocket();
+		} catch (SocketException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		this.b = new byte[256];
 		run();
 	}
@@ -64,8 +69,9 @@ public class ProxySenderUDP implements Closeable {
 
 	@Override
 	public void close() throws IOException {
-		timer.cancel();
+		run = false;
 		tt.cancel();
+		timer.cancel();
 		socket.close();
 	}
 	

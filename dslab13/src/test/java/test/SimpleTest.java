@@ -26,10 +26,8 @@ public class SimpleTest {
 	public void before() throws Exception {
 		proxy = componentFactory.startProxy(new Config("proxy"), new Shell("proxy", new TestOutputStream(System.out), new TestInputStream()));
 		Thread.sleep(Util.WAIT_FOR_COMPONENT_STARTUP);
-		
 		server = componentFactory.startFileServer(new Config("fs1"), new Shell("fs1", new TestOutputStream(System.out), new TestInputStream()));
 		Thread.sleep(Util.WAIT_FOR_COMPONENT_STARTUP);
-		
 		client = componentFactory.startClient(new Config("client"), new Shell("client", new TestOutputStream(System.out), new TestInputStream()));
 		Thread.sleep(Util.WAIT_FOR_COMPONENT_STARTUP);
 	}
@@ -37,19 +35,25 @@ public class SimpleTest {
 	@After
 	public void after() throws Exception {
 		try {
+			System.out.println("try to close proxy");
 			proxy.exit();
+			System.out.println("proxy closed");
 		} catch (Exception e) {
 			// This should not happen. In case it does, output the stack trace for easier trouble shooting.
 			e.printStackTrace();
 		}
 		try {
+			System.out.println("try to close server");
 			server.exit();
+			System.out.println("server closed");
 		} catch (IOException e) {
 			// This should not happen. In case it does, output the stack trace for easier trouble shooting.
 			e.printStackTrace();
 		}
 		try {
+			System.out.println("try to close client");
 			client.exit();
+			System.out.println("client closed");
 		} catch (IOException e) {
 			// This should not happen. In case it does, output the stack trace for easier trouble shooting.
 			e.printStackTrace();

@@ -14,9 +14,7 @@ import message.request.*;
 import message.response.*;
 import util.Config;
 
-public class TCPHandler implements Runnable, Closeable{
-	//TODO: Filenamen zurueckgeben
-	//TODO: Downloads durchfuehren
+public class TCPHandler implements Runnable, Closeable {
 	private Config config;
 	private Socket csocket;
 	private ObjectInputStream strin;
@@ -24,21 +22,16 @@ public class TCPHandler implements Runnable, Closeable{
 	private FileServerImpl fileserver;
 	private ServerSocket ssocket;
 
-	private boolean run;
-
-	public TCPHandler(Config config) throws SocketException {
-		this.config = config;		
-		this.run = false;
+	public TCPHandler(Config config) {
+		this.config = config;
 		this.fileserver = new FileServerImpl(config);
 	}
-	
 
 	@Override
 	public void run() {
-		try {
 
-			run = true;
-			while (run) {
+		while (true) {
+			try {
 				ssocket = new ServerSocket(config.getInt("tcp.port"));
 				csocket = ssocket.accept();
 
@@ -57,61 +50,62 @@ public class TCPHandler implements Runnable, Closeable{
 				// send object
 				strout = new ObjectOutputStream(csocket.getOutputStream());
 				strout.writeObject(res);
-				
+
 				strout.close();
 				strin.close();
 				csocket.close();
 				ssocket.close();
+			} catch (IOException e) {
+				break;
+			} catch (ClassNotFoundException e) {
+				//TODO
 			}
-
-		} catch (IOException e) {
-			e.printStackTrace();
-		} catch (ClassNotFoundException e) {
-			e.printStackTrace();
 		}
+
 	}
 
 	private Response sendRequestToFileServer(Request req) throws IOException {
-		if(req.getClass().equals(ListRequest.class)){
+		if (req.getClass().equals(ListRequest.class)) {
 			ListResponse lres = (ListResponse) fileserver.list();
 			return lres;
-		} else if(req.getClass().equals(InfoRequest.class)){
-			InfoResponse ires = (InfoResponse) fileserver.info((InfoRequest) req);
+		} else if (req.getClass().equals(InfoRequest.class)) {
+			InfoResponse ires = (InfoResponse) fileserver
+					.info((InfoRequest) req);
 			return ires;
-		} else if(req.getClass().equals(VersionRequest.class)){
-			VersionResponse vres = (VersionResponse) fileserver.version((VersionRequest) req);
+		} else if (req.getClass().equals(VersionRequest.class)) {
+			VersionResponse vres = (VersionResponse) fileserver
+					.version((VersionRequest) req);
 			return vres;
-		} else if(req.getClass().equals(DownloadFileRequest.class)){
-			Response dres = fileserver.download((DownloadFileRequest)req);
+		} else if (req.getClass().equals(DownloadFileRequest.class)) {
+			Response dres = fileserver.download((DownloadFileRequest) req);
 			return dres;
-		}
-		
-		
-		/*if (req.getClass().equals(LoginRequest.class)) {
-			return proxy.login((LoginRequest) req);
-		} else if (req.getClass().equals(BuyRequest.class)) {
-			return proxy.buy((BuyRequest) req);
-		} else if (req.getClass().equals(CreditsRequest.class)) {
-			return proxy.credits();
-		} else if (req.getClass().equals(ListRequest.class)) {
-			return proxy.list();
-		} else if (req.getClass().equals(DownloadTicketRequest.class)) {
-			return proxy.download((DownloadTicketRequest) req);
 		} else if (req.getClass().equals(UploadRequest.class)) {
-			return proxy.upload((UploadRequest) req);
-		} else if (req.getClass().equals(LogoutRequest.class)) {
-			return proxy.logout();
-		}*/
+			Response ures = fileserver.upload((UploadRequest) req);
+			return ures;
+		}
+
+		/*
+		 * if (req.getClass().equals(LoginRequest.class)) { return
+		 * proxy.login((LoginRequest) req); } else if
+		 * (req.getClass().equals(BuyRequest.class)) { return
+		 * proxy.buy((BuyRequest) req); } else if
+		 * (req.getClass().equals(CreditsRequest.class)) { return
+		 * proxy.credits(); } else if (req.getClass().equals(ListRequest.class))
+		 * { return proxy.list(); } else if
+		 * (req.getClass().equals(DownloadTicketRequest.class)) { return
+		 * proxy.download((DownloadTicketRequest) req); } else if
+		 * (req.getClass().equals(UploadRequest.class)) { return
+		 * proxy.upload((UploadRequest) req); } else if
+		 * (req.getClass().equals(LogoutRequest.class)) { return proxy.logout();
+		 * }
+		 */
 		return null;
 	}
 
 	@Override
 	public void close() throws IOException {
-		run = false;
+		if(ssocket != null)
+			ssocket.close();
 		fileserver.close();
-		strout.close();
-		strin.close();
-		csocket.close();
-		ssocket.close();
 	}
 }
