@@ -142,7 +142,14 @@ public class ProxyImpl implements IProxy, Closeable {
 		FileServerInfo server = proxycli.getOnlineServer();
 		ss = new ServerSenderTCP(server.getAddress(), server.getPort());
 		ListResponse lres = (ListResponse) ss.send(new ListRequest());
-		Set<String> names = lres.getFileNames();
+		Set<String> names = null;
+		try{
+			names = lres.getFileNames();
+		} catch(Exception e){
+			//server has gone offline in meantime
+			//sent to fast
+			return null;
+		}
 		if (!names.contains(filename)) {
 			return new MessageResponse("Invalid file name");
 		}

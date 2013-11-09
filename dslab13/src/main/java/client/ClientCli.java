@@ -128,15 +128,19 @@ public class ClientCli implements IClientCli {
 	@Override
 	@Command
 	public MessageResponse upload(String filename) throws IOException {
+		
 		String dir = config.getString("download.dir");
 		
 		File file = new File(dir);
 		File[] files = file.listFiles();
 		byte[] content = null;
 		
+		boolean foundfile = false;
+		
 		for (File f : files) {
 			if (f.isFile()) {
 				if(f.getName().equals(filename)){
+					foundfile = true;
 					//read content
 					FileInputStream in = new FileInputStream(f);
 					String s = "";
@@ -154,6 +158,8 @@ public class ClientCli implements IClientCli {
 				}
 			}
 		}
+		if(!foundfile)
+			return new MessageResponse("Invalid file name");
 		UploadRequest ureq = new UploadRequest(filename, 1, content);
 		MessageResponse res = (MessageResponse) psender.send(ureq);
 		return res;

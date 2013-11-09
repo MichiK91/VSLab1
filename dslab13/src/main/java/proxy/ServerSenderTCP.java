@@ -24,16 +24,20 @@ public class ServerSenderTCP implements Closeable {
 		
 	}
 	
-	private void connect(){
+	private boolean connect(){
 		try {
 			socket = new Socket(addr, port);
 		} catch (IOException e) {
-			e.printStackTrace();
+			System.out.println("Cannot connect! Server has gone offline in meantime.");
+			return false;
 		}
+		return true;
 	}
 	
 	public Response send(Request req) throws IOException{
-		connect();
+		if(!connect()){
+			return null;
+		}
 		//send request
 		strout = new ObjectOutputStream(socket.getOutputStream());
 		strout.writeObject(req); 
@@ -51,9 +55,12 @@ public class ServerSenderTCP implements Closeable {
 
 	@Override
 	public void close() throws IOException {
-		strin.close();
-		strout.close();
-		socket.close();
+		if(strin != null)
+			strin.close();
+		if(strout != null)
+			strout.close();
+		if(socket != null)
+			socket.close();
 	}
 	
 }
