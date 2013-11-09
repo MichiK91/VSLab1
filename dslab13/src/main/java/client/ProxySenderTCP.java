@@ -38,9 +38,10 @@ public class ProxySenderTCP implements Closeable {
 		// send request
 		try {
 			strout.writeObject(req);
-		} catch (IOException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
+		} catch (Exception e) {
+			//proxy already closed
+			System.out.println("Proxy has gone offline");
+			return null;
 		}
 
 		// get response
@@ -51,7 +52,8 @@ public class ProxySenderTCP implements Closeable {
 			e.printStackTrace();
 		} catch (IOException e) {
 			//proxy already closed
-			//e.printStackTrace();
+			System.out.println("Proxy has gone offline");
+			return null;
 		}
 		return res;
 	}
@@ -59,8 +61,12 @@ public class ProxySenderTCP implements Closeable {
 	@Override
 	public void close() throws IOException {
 		strin.close();
-		strout.close();
+		try{
+			strout.close();
+		}catch (Exception e) {
+			//Proxy closed during connection. 
+			System.out.println("Proxy has gone offline");
+		}
 		socket.close();
 	}
-
 }

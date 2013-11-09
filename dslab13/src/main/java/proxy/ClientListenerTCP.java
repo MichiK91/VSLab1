@@ -5,47 +5,39 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.SocketException;
 
 import message.Request;
 import message.Response;
 import message.request.BuyRequest;
 import message.request.CreditsRequest;
-import message.request.DownloadFileRequest;
 import message.request.DownloadTicketRequest;
 import message.request.ListRequest;
 import message.request.LoginRequest;
 import message.request.LogoutRequest;
 import message.request.UploadRequest;
 
-import util.Config;
 
 public class ClientListenerTCP implements Runnable, Closeable {
 
-	private Config config;
 	private Socket csocket;
 	private ObjectInputStream strin;
 	private ObjectOutputStream strout;
 	private ProxyCli proxycli;
 	private ProxyImpl proxy;
-	// private ServerSocket ssocket;
 
 	private boolean run;
 
 	public ClientListenerTCP(Socket csocket, ProxyCli proxycli) {
-		this.config = config;
 		this.run = false;
 		this.proxycli = proxycli;
-		proxy = new ProxyImpl(config, this.proxycli);
+		proxy = new ProxyImpl(this.proxycli);
 
 		this.csocket = csocket;
 		try {
 			strin = new ObjectInputStream(csocket.getInputStream());
 			strout = new ObjectOutputStream(csocket.getOutputStream());
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 
@@ -73,11 +65,12 @@ public class ClientListenerTCP implements Runnable, Closeable {
 				strout.writeObject(res);
 			} catch (EOFException e) {
 				// client closed connection
+				System.out.println("Client closed connection.");
 				break;
 			} catch (IOException e) {
+				// socket closed
 				break;
 			} catch (ClassNotFoundException e) {
-				// TODO Auto-generated catch block
 				break;
 			}
 
@@ -110,7 +103,6 @@ public class ClientListenerTCP implements Runnable, Closeable {
 		strout.close();
 		strin.close();
 		csocket.close();
-		// ssocket.close();
 	}
 
 }

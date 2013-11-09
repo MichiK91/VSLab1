@@ -10,10 +10,8 @@ import java.net.Socket;
 import message.Request;
 import message.Response;
 
-import util.Config;
 
 public class ServerSenderTCP implements Closeable {
-	private Config config;
 	private Socket socket;
 	private ObjectOutputStream strout;
 	private ObjectInputStream strin;

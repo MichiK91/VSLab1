@@ -7,11 +7,10 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map.Entry;
+import java.util.Collections;
+import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.sql.Timestamp;
 
 import model.FileServerInfo;
 
@@ -26,18 +25,16 @@ public class ServerListenerUDP implements Runnable, Closeable {
 	private TimerTask tt;
 	private Timer timer;
 
-	private FileServerInfo files;
-
-	private  HashMap<FileServerInfo, Long> hm;
-	private ArrayList<FileServerInfo> fileserver;
+	
+	private List<FileServerTime> server;
 
 	public ServerListenerUDP(Config config) throws SocketException {
 		this.socket = new DatagramSocket(config.getInt("udp.port"));
 		this.b = new byte[256];
 		this.packet = new DatagramPacket(this.b, this.b.length);
 		this.config = config;
-		this.hm = new HashMap<FileServerInfo, Long>();
-		this.fileserver = new ArrayList<FileServerInfo>();
+		this.server = Collections
+				.synchronizedList(new ArrayList<FileServerTime>());
 
 		check();
 	}
@@ -48,10 +45,10 @@ public class ServerListenerUDP implements Runnable, Closeable {
 
 			@Override
 			public void run() {
-				for (Entry<FileServerInfo, Long> e : hm.entrySet()) {
-					if (System.currentTimeMillis() - e.getValue() > 3000) {
-						hm.remove(e.getKey());
-						setOffline(e.getKey());
+				
+				for(FileServerTime f : server){
+					if (System.currentTimeMillis() - f.getTimestamp() > 3000) {
+						f.setOnline(false);
 					}
 				}
 			}
@@ -70,29 +67,21 @@ public class ServerListenerUDP implements Runnable, Closeable {
 				String port = s.substring(s.lastIndexOf(" ") + 1,
 						s.lastIndexOf(" ") + 6);
 				InetAddress addr = packet.getAddress();
-
 				boolean found = false;
-				for (Entry<FileServerInfo, Long> e : hm.entrySet()) {
-					if (addr.equals(e.getKey().getAddress())
-							&& port.equals("" + e.getKey().getPort())) {
-						hm.put(e.getKey(), System.currentTimeMillis());
+				
+				for(FileServerTime f : server){
+					if(f.equalsImportant(addr, Integer.parseInt(port))){
 						found = true;
+						f.setOnline(true);
+						f.setTimestamp(System.currentTimeMillis());
 					}
 				}
-				if (!found) {
-					System.out.println("new server");
-					files = new FileServerInfo(addr, Integer.parseInt(port), 0,
-							true);
-					hm.put(files, System.currentTimeMillis());
-					if (checkOffline(files)) {
-						setOnline(files);
-					} else {
-						fileserver.add(files);
-					}
+				if(!found){
+					server.add(new FileServerTime(addr,Integer.parseInt(port),0,true,System.currentTimeMillis()));
 				}
-
 			} catch (IOException e) {
-				//socket closed
+				// socket closed
+				System.out.println("Proxy shuts down. No further servers are allowed.");
 				break;
 			}
 		}
@@ -108,44 +97,23 @@ public class ServerListenerUDP implements Runnable, Closeable {
 
 	}
 
-	// checks, if a server was already online
-	public boolean checkOffline(FileServerInfo file) {
-		for (FileServerInfo f : fileserver) {
-			if (f.getAddress().equals(file.getAddress())
-					&& file.getPort() == f.getPort()) {
-				return true;
-			}
-		}
-		return false;
-	}
 
-	// sets the serverstatus offline
-	public void setOffline(FileServerInfo file) {
-		for (FileServerInfo f : fileserver) {
-			if (f.getAddress().equals(file.getAddress())
-					&& file.getPort() == f.getPort()) {
-				fileserver.remove(f);
-				fileserver.add(new FileServerInfo(f.getAddress(), f.getPort(),
-						f.getUsage(), false));
+	//changes the usage count
+	public void changeServer(FileServerInfo f){
+		for(FileServerTime e : server){
+			if(e.equalsImportant(f.getAddress(), f.getPort())){
+				e.setUsage(f.getUsage());
 			}
 		}
 	}
-
-	// sets the serverstatus online
-	public void setOnline(FileServerInfo file) {
-		for (FileServerInfo f : fileserver) {
-			if (f.getAddress().equals(file.getAddress())
-					&& file.getPort() == f.getPort()) {
-				fileserver.remove(f);
-				fileserver.add(new FileServerInfo(f.getAddress(), f.getPort(),
-						f.getUsage(), true));
-			}
+	
+	//returns list of all current server
+	public List<FileServerInfo> getServers() {
+		List<FileServerInfo> li = new ArrayList<FileServerInfo>();
+		for(FileServerTime f: server){
+			li.add(f.getFileServerInfo());
 		}
-	}
-
-	// returns the list of servers
-	public ArrayList<FileServerInfo> getServers() {
-		return fileserver;
+		return li;
 	}
 
 }

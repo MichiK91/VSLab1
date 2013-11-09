@@ -2,12 +2,8 @@ package proxy;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.net.SocketException;
-import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import util.ChecksumUtils;
 import util.Config;
@@ -21,7 +17,6 @@ import model.UserInfo;
 
 public class ProxyImpl implements IProxy, Closeable {
 
-	private Config config;
 	private Config userconfig;
 
 	private String user;
@@ -31,19 +26,10 @@ public class ProxyImpl implements IProxy, Closeable {
 	private ProxyCli proxycli;
 	private ServerSenderTCP ss;
 
-	// private ArrayList<UserInfo> users = new ArrayList<UserInfo>();
 
-	public ProxyImpl(Config config, ProxyCli proxycli) {
-		this.config = config;
+	public ProxyImpl(ProxyCli proxycli) {
 		this.userconfig = new Config("user");
 		this.proxycli = proxycli;
-		// // thread pool for the servers
-		// this.s_listener = new ServerListener(this.config);
-		// this.threads.execute(this.s_listener);
-		// // thread pool for the client
-		// this.c_listener = new ClientListener(this.config, this);
-		// this.threads.execute(this.c_istener();listener);
-		// this.s_listener = proxycli.getServerL
 		this.creditscount = 0;
 		this.user = "";
 		this.loggedin = false;
@@ -117,7 +103,6 @@ public class ProxyImpl implements IProxy, Closeable {
 			if (u.getName().equals(user)) {
 				proxycli.removeUser(u);
 				proxycli.addUser(new UserInfo(user, creditscount, true));
-				// proxycli.setUsers(users);
 				break;
 			}
 		}
@@ -127,8 +112,6 @@ public class ProxyImpl implements IProxy, Closeable {
 
 	@Override
 	public Response list() throws IOException {
-		// TODO: alle server durchgehn und alle files ausgeben. wenn server
-		// unterschiedliche. zur zeit nur den mit wenigsten gebrauch
 		if (!loggedin)
 			return new MessageResponse("You have to log in");
 		// no servers online
@@ -171,14 +154,13 @@ public class ProxyImpl implements IProxy, Closeable {
 		} else {
 			creditscount -= ires.getSize();
 			// increase usage
-			proxycli.removeServer(server);
-			proxycli.addServer(new FileServerInfo(server.getAddress(), server
-					.getPort(), server.getUsage() + ires.getSize(), true));
+			proxycli.changeServer(new FileServerInfo(server.getAddress(), server
+			.getPort(), server.getUsage() + ires.getSize(), true));
+			
 			for (UserInfo u : proxycli.getUserList()) {
 				if (u.getName().equals(user)) {
 					proxycli.removeUser(u);
 					proxycli.addUser(new UserInfo(user, creditscount, true));
-					// proxycli.setUsers(users);
 					break;
 				}
 			}
@@ -207,7 +189,7 @@ public class ProxyImpl implements IProxy, Closeable {
 					"No servers online, failed to upload the file");
 
 		ServerSenderTCP sstcp;
-		ArrayList<FileServerInfo> servers = proxycli.getServerList();
+		List<FileServerInfo> servers = proxycli.getServerList();
 		MessageResponse ures = null;
 
 		for (FileServerInfo fs : servers) {
@@ -243,7 +225,6 @@ public class ProxyImpl implements IProxy, Closeable {
 				break;
 			}
 		}
-		String log = user;
 		user = "";
 		loggedin = false;
 		creditscount = 0;

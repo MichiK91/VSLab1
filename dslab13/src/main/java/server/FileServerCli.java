@@ -2,19 +2,11 @@ package server;
 
 import java.io.IOException;
 import java.net.SocketException;
-import java.util.ArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
-import proxy.ProxyImpl;
-import proxy.ServerListenerUDP;
 import util.Config;
 
-import message.response.FileServerInfoResponse;
 import message.response.MessageResponse;
-import message.response.UserInfoResponse;
-import model.FileServerInfo;
-import model.UserInfo;
 import cli.Command;
 import cli.Shell;
 
@@ -48,10 +40,8 @@ public class FileServerCli implements IFileServerCli {
 	public MessageResponse exit() throws IOException {
 		fileserver.close();
 		handler.close();
-
-		shell.close();
 		threads.shutdownNow();
-		
+		shell.close();
 		return null;
 	}
 

@@ -20,14 +20,6 @@ public class Client {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		/*try {
-			Socket s = new Socket("localhost", 9000);
-			PrintStream os = new PrintStream(s.getOutputStream());
-			os.println("Hallo Server");
-			s.close();
-		} catch (Exception e) {
-			System.out.println("Error");
-		}*/
 	}
 
 }

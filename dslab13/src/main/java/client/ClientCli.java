@@ -27,7 +27,7 @@ public class ClientCli implements IClientCli {
 	private ProxySenderTCP psender;	
 	private ServerSenderTCP ssender;
 	
-	boolean login;
+	private boolean login;
 
 	public ClientCli(Config config, Shell shell) throws IOException {
 		this.config = config;
@@ -43,6 +43,7 @@ public class ClientCli implements IClientCli {
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
+			System.out.println("No proxy available. Please press enter to exit.");
 			exit();
 		}
 
@@ -174,8 +175,8 @@ public class ClientCli implements IClientCli {
 			logout();
 		if(psender != null)
 			psender.close();
+		threads.shutdownNow();
 		shell.close();
-		threads.shutdown();
 		return null;
 	}
 

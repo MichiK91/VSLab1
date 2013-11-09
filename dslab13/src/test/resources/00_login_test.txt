@@ -4,8 +4,9 @@
 
 client:	!login alice 12345
 client:	!credits
+client: !login bill 23456
 proxy:	!users
 
 proxy:	!exit
-client:	!exit
+client: !exit
 fs1:	!exit

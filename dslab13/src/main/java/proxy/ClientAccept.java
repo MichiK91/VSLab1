@@ -1,15 +1,12 @@
 package proxy;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.net.ServerSocket;
-import java.net.Socket;
-import java.net.SocketException;
+import java.util.ArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import util.Config;
-import your.Proxy;
 
 public class ClientAccept implements Runnable{
 	
@@ -18,16 +15,17 @@ public class ClientAccept implements Runnable{
 	private ProxyCli proxycli;
 	private ClientListenerTCP cl;
 	
+	private ArrayList<ClientListenerTCP> list;
+	
 	public ClientAccept(Config config, ProxyCli proxycli){
 		this.proxycli = proxycli;
+		this.list = new ArrayList<ClientListenerTCP>();
 		try {
 			this.s = new ServerSocket(config.getInt("tcp.port"));
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		threads = Executors.newCachedThreadPool();
-		//run();
 	}
 	@Override
 	public void run() {
@@ -35,9 +33,11 @@ public class ClientAccept implements Runnable{
 		while(true){
 			try {
 				cl = new ClientListenerTCP(s.accept(),proxycli);
+				list.add(cl);
 				threads.execute(cl);
 			} catch (Exception e) {
-				//socket closed
+				//socket closed - no clients till now
+				System.out.println("Proxy shuts down. No further clients are allowed.");
 				break;
 			}
 		}
@@ -45,9 +45,11 @@ public class ClientAccept implements Runnable{
 	}
 	
 	public void close() throws IOException{
-		if(cl != null)
-			cl.close();
-		threads.shutdown();
+		for(ClientListenerTCP c : list){
+			if(c != null)
+				c.close();
+		}
+		threads.shutdownNow();
 		s.close();
 	}
 

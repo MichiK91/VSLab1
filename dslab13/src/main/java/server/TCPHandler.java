@@ -6,7 +6,6 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.SocketException;
 
 import message.Request;
 import message.Response;
@@ -55,10 +54,12 @@ public class TCPHandler implements Runnable, Closeable {
 				strin.close();
 				csocket.close();
 				ssocket.close();
+				
 			} catch (IOException e) {
+				System.out.println("FileServer shuts down. No further downloads are allowed.");
 				break;
 			} catch (ClassNotFoundException e) {
-				//TODO
+				e.printStackTrace();
 			}
 		}
 
@@ -83,22 +84,6 @@ public class TCPHandler implements Runnable, Closeable {
 			Response ures = fileserver.upload((UploadRequest) req);
 			return ures;
 		}
-
-		/*
-		 * if (req.getClass().equals(LoginRequest.class)) { return
-		 * proxy.login((LoginRequest) req); } else if
-		 * (req.getClass().equals(BuyRequest.class)) { return
-		 * proxy.buy((BuyRequest) req); } else if
-		 * (req.getClass().equals(CreditsRequest.class)) { return
-		 * proxy.credits(); } else if (req.getClass().equals(ListRequest.class))
-		 * { return proxy.list(); } else if
-		 * (req.getClass().equals(DownloadTicketRequest.class)) { return
-		 * proxy.download((DownloadTicketRequest) req); } else if
-		 * (req.getClass().equals(UploadRequest.class)) { return
-		 * proxy.upload((UploadRequest) req); } else if
-		 * (req.getClass().equals(LogoutRequest.class)) { return proxy.logout();
-		 * }
-		 */
 		return null;
 	}
 

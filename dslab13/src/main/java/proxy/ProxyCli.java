@@ -1,7 +1,6 @@
 package proxy;
 
 import java.io.IOException;
-import java.net.ServerSocket;
 import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.Enumeration;
@@ -30,9 +29,8 @@ public class ProxyCli implements IProxyCli {
 	private ClientAccept c_accept;
 	
 	private ArrayList<UserInfo> users;
-	private ArrayList<FileServerInfo> servers;
+	private List<FileServerInfo> servers;
 
-	// thread pool
 	private ExecutorService threads = Executors.newCachedThreadPool();
 
 	private ResourceBundle bundle;
@@ -51,9 +49,6 @@ public class ProxyCli implements IProxyCli {
 		this.s_listener = new ServerListenerUDP(this.config);
 		this.threads.execute(this.s_listener);
 		
-		// thread pool for the client
-		//this.c_listener = new ClientListenerTCP(this.config, this);
-		//this.threads.execute(this.c_listener);
 
 		this.users = new ArrayList<UserInfo>();
 		setUserList(); 
@@ -82,7 +77,7 @@ public class ProxyCli implements IProxyCli {
 	public MessageResponse exit() throws IOException {
 		c_accept.close();
 		s_listener.close();
-		threads.shutdown();
+		threads.shutdownNow();
 		shell.close();
 		return null;
 	}
@@ -125,16 +120,12 @@ public class ProxyCli implements IProxyCli {
 		servers = s_listener.getServers();
 	}
 	
-	public ArrayList<FileServerInfo> getServerList(){
+	public List<FileServerInfo> getServerList(){
 		return servers;
 	}
 	
-	public void addServer(FileServerInfo f){
-		servers.add(f);
-	}
-	
-	public void removeServer(FileServerInfo f){
-		servers.remove(f);
+	public void changeServer(FileServerInfo f){
+		s_listener.changeServer(f);
 	}
 	
 	public FileServerInfo getOnlineServer(){
@@ -151,6 +142,7 @@ public class ProxyCli implements IProxyCli {
 		return server;
 	}
 	public boolean checkOnline(){
+		setServerList();
 		for(FileServerInfo f: servers){
 			if(f.isOnline()){
 				return true;
