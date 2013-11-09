@@ -1,0 +1,37 @@
+Testsuite: test.ApiTest
+Tests run: 1, Failures: 0, Errors: 1, Skipped: 0, Time elapsed: 10,244 sec
+------------- Standard Output ---------------
+00_login_test.txt
+21:41:02.139		client> !login alice 12345
+!login alice 12345
+21:41:02.184		client: !login success
+21:41:02.628		client> !credits
+!credits
+21:41:02.660		client: !credits 200
+21:41:03.129		client> !login bill 23456
+!login bill 23456
+21:41:03.136		client: !login wrong_credentials
+21:41:03.629		proxy> !users
+21:41:03.638		proxy:
+21:41:03.638		1. bill            offline           200
+21:41:03.638		2. alice           online            200
+21:41:04.128		proxy> !exit
+Proxy shuts down. No further servers are allowed.
+Proxy shuts down. No further clients are allowed.
+21:41:04.142		proxy: Shell closed
+21:41:04.628		client> !exit
+Proxy has gone offline
+21:41:04.637		client: Shell closed
+21:41:05.129		fs1> !exit
+FileServer shuts down. No further downloads are allowed.
+21:41:05.134		fs1: Shell closed
+################################################################################
+01_simpletest_sim_test.txt
+------------- ---------------- ---------------
+
+Testcase: test took 10,138 sec
+	Caused an ERROR
+Cannot find component '%Simulation'. Please start it before using it.
+java.lang.IllegalStateException: Cannot find component '%Simulation'. Please start it before using it.
+	at test.ApiTest.test(ApiTest.java:96)
+
