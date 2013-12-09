@@ -43,7 +43,7 @@ public class ClientCli implements IClientCli {
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
-			System.out.println("No proxy available. Please press enter to exit.");
+			System.err.println("No proxy available. Please press enter to exit.");			
 			exit();
 		}
 

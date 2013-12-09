@@ -200,6 +200,7 @@ public class ProxyImpl implements IProxy, Closeable {
 		MessageResponse ures = null;
 
 		for (FileServerInfo fs : servers) {
+			//TODO Stage1
 			// get all servers, which are online and send each of them a
 			// uploadrequest
 			if (fs.isOnline()) {

@@ -129,6 +129,7 @@ public class ProxyCli implements IProxyCli {
 	}
 	
 	public FileServerInfo getOnlineServer(){
+		//TODO Stage1
 		FileServerInfo server = new FileServerInfo(null, 0, 0, false);
 		long usage = Long.MAX_VALUE;
 		for(FileServerInfo f: servers){
