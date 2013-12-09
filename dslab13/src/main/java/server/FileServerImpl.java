@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
+import util.ChecksumUtils;
 import util.Config;
 
 import message.Response;
@@ -41,6 +42,16 @@ public class FileServerImpl implements IFileServer, Closeable {
 
 	@Override
 	public Response download(DownloadFileRequest request) throws IOException {
+		
+		boolean check = ChecksumUtils.verifyChecksum(request.getTicket().getUsername(),
+				new File(config.getString("fileserver.dir") + "/"
+						+ request.getTicket().getFilename()), 1, request
+						.getTicket().getChecksum());
+
+		if (!check) {
+			return new MessageResponse("Invalid download ticket");
+		}
+
 		File file = new File(config.getString("fileserver.dir"));
 		File[] files = file.listFiles();
 		byte[] content = null;
@@ -105,7 +116,7 @@ public class FileServerImpl implements IFileServer, Closeable {
 
 	@Override
 	public MessageResponse upload(UploadRequest request) throws IOException {
-		
+
 		// first delete existing file
 		String dir = config.getString("fileserver.dir");
 		File file = new File(dir);
@@ -118,7 +129,7 @@ public class FileServerImpl implements IFileServer, Closeable {
 				}
 			}
 		}
-		
+
 		FileOutputStream out = new FileOutputStream(dir + "/"
 				+ request.getFilename());
 		out.write(request.getContent());

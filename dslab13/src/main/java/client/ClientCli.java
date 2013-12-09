@@ -102,7 +102,14 @@ public class ClientCli implements IClientCli {
 		DownloadTicket dt = dtres.getTicket();
 		DownloadFileRequest dfreq = new DownloadFileRequest(dt);
 		ssender = new ServerSenderTCP(dt.getAddress(), dt.getPort());
-		DownloadFileResponse dfres = (DownloadFileResponse) ssender.send(dfreq);
+		
+		Object res1 = ssender.send(dfreq);
+		DownloadFileResponse dfres;
+		if(res1 instanceof DownloadFileResponse){
+			dfres = (DownloadFileResponse) res1;
+		} else{
+			return (Response) res1;
+		}
 		
 		//create file
 		String dir = config.getString("download.dir");

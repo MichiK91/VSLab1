@@ -2,16 +2,12 @@
 *	startClient client
 *	startFileServer fs1
 
-proxy: !users
-proxy: !fileservers
 client:	!login alice 12345
 client:	!download short.txt
-client:	!upload upload.txt
+client:	!upload data.txt
 client:	!credits
 *	startFileServer fs2
-client:	!download upload.txt
-proxy: !users
-proxy: !fileservers
+client:	!download data.txt
 fs2:	!exit
 fs1:	!exit
 proxy:	!exit

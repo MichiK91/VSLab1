@@ -25,7 +25,6 @@ public class ServerListenerUDP implements Runnable, Closeable {
 	private TimerTask tt;
 	private Timer timer;
 
-	
 	private List<FileServerTime> server;
 
 	public ServerListenerUDP(Config config) throws SocketException {
@@ -45,10 +44,11 @@ public class ServerListenerUDP implements Runnable, Closeable {
 
 			@Override
 			public void run() {
-				
-				for(FileServerTime f : server){
-					if (System.currentTimeMillis() - f.getTimestamp() > 3000) {
-						f.setOnline(false);
+				synchronized (server) {
+					for (FileServerTime f : server) {
+						if (System.currentTimeMillis() - f.getTimestamp() > 3000) {
+							f.setOnline(false);
+						}
 					}
 				}
 			}
@@ -68,20 +68,23 @@ public class ServerListenerUDP implements Runnable, Closeable {
 						s.lastIndexOf(" ") + 6);
 				InetAddress addr = packet.getAddress();
 				boolean found = false;
-				
-				for(FileServerTime f : server){
-					if(f.equalsImportant(addr, Integer.parseInt(port))){
-						found = true;
-						f.setOnline(true);
-						f.setTimestamp(System.currentTimeMillis());
+				synchronized (server) {
+					for (FileServerTime f : server) {
+						if (f.equalsImportant(addr, Integer.parseInt(port))) {
+							found = true;
+							f.setOnline(true);
+							f.setTimestamp(System.currentTimeMillis());
+						}
 					}
 				}
-				if(!found){
-					server.add(new FileServerTime(addr,Integer.parseInt(port),0,true,System.currentTimeMillis()));
+				if (!found) {
+					server.add(new FileServerTime(addr, Integer.parseInt(port),
+							0, true, System.currentTimeMillis()));
 				}
 			} catch (IOException e) {
 				// socket closed
-				System.out.println("Proxy shuts down. No further servers are allowed.");
+				System.out
+						.println("Proxy shuts down. No further servers are allowed.");
 				break;
 			}
 		}
@@ -97,21 +100,24 @@ public class ServerListenerUDP implements Runnable, Closeable {
 
 	}
 
-
-	//changes the usage count
-	public void changeServer(FileServerInfo f){
-		for(FileServerTime e : server){
-			if(e.equalsImportant(f.getAddress(), f.getPort())){
-				e.setUsage(f.getUsage());
+	// changes the usage count
+	public void changeServer(FileServerInfo f) {
+		synchronized (server) {
+			for (FileServerTime e : server) {
+				if (e.equalsImportant(f.getAddress(), f.getPort())) {
+					e.setUsage(f.getUsage());
+				}
 			}
 		}
 	}
-	
-	//returns list of all current server
+
+	// returns list of all current server
 	public List<FileServerInfo> getServers() {
 		List<FileServerInfo> li = new ArrayList<FileServerInfo>();
-		for(FileServerTime f: server){
-			li.add(f.getFileServerInfo());
+		synchronized (server) {
+			for (FileServerTime f : server) {
+				li.add(f.getFileServerInfo());
+			}
 		}
 		return li;
 	}
