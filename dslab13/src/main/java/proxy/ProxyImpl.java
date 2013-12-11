@@ -2,18 +2,34 @@ package proxy;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 
-import util.ChecksumUtils;
-import util.Config;
-
 import message.Response;
-import message.request.*;
-import message.response.*;
+import message.request.BuyRequest;
+import message.request.DownloadTicketRequest;
+import message.request.InfoRequest;
+import message.request.ListRequest;
+import message.request.LoginRequest;
+import message.request.UploadRequest;
+import message.request.VersionRequest;
+import message.response.BuyResponse;
+import message.response.CreditsResponse;
+import message.response.DownloadTicketResponse;
+import message.response.FileServerInfoResponse;
+import message.response.InfoResponse;
+import message.response.ListResponse;
+import message.response.LoginResponse;
+import message.response.MessageResponse;
+import message.response.VersionResponse;
 import model.DownloadTicket;
 import model.FileServerInfo;
 import model.UserInfo;
+import util.ChecksumUtils;
+import util.Config;
 
 public class ProxyImpl implements IProxy, Closeable {
 
@@ -25,7 +41,8 @@ public class ProxyImpl implements IProxy, Closeable {
 	private boolean loggedin;
 	private ProxyCli proxycli;
 	private ServerSenderTCP ss;
-
+	int readQuorum = 2;
+	int writeQuorum = 2;
 
 	public ProxyImpl(ProxyCli proxycli) {
 		this.userconfig = new Config("user");
@@ -39,6 +56,7 @@ public class ProxyImpl implements IProxy, Closeable {
 	@Override
 	public LoginResponse login(LoginRequest request) throws IOException {
 		// user already logged in on this client
+
 		if (loggedin) {
 			return new LoginResponse(LoginResponse.Type.WRONG_CREDENTIALS);
 		}
@@ -66,8 +84,7 @@ public class ProxyImpl implements IProxy, Closeable {
 				if (u.getName().equals(user)) {
 					// user already in list as online (other client)
 					if (u.isOnline() == true) {
-						return new LoginResponse(
-								LoginResponse.Type.WRONG_CREDENTIALS);
+						return new LoginResponse(LoginResponse.Type.WRONG_CREDENTIALS);
 					} else if (u.getName().equals(user)) {
 						// change online status
 						creditscount = u.getCredits();
@@ -115,11 +132,10 @@ public class ProxyImpl implements IProxy, Closeable {
 		if (!loggedin)
 			return new MessageResponse("You have to log in");
 		// no servers online
-		if (!proxycli.checkOnline()) 
+		if (!proxycli.checkOnline())
 			return new MessageResponse("No servers online");
 
-		ServerSenderTCP ss = new ServerSenderTCP(proxycli.getOnlineServer()
-				.getAddress(), proxycli.getOnlineServer().getPort());
+		ServerSenderTCP ss = new ServerSenderTCP(proxycli.getOnlineServer().getAddress(), proxycli.getOnlineServer().getPort());
 		ListResponse res = (ListResponse) ss.send(new ListRequest());
 
 		return res;
@@ -143,11 +159,11 @@ public class ProxyImpl implements IProxy, Closeable {
 		ss = new ServerSenderTCP(server.getAddress(), server.getPort());
 		ListResponse lres = (ListResponse) ss.send(new ListRequest());
 		Set<String> names = null;
-		try{
+		try {
 			names = lres.getFileNames();
-		} catch(Exception e){
-			//server has gone offline in meantime
-			//sent to fast
+		} catch (Exception e) {
+			// server has gone offline in meantime
+			// sent to fast
 			return null;
 		}
 		if (!names.contains(filename)) {
@@ -161,9 +177,8 @@ public class ProxyImpl implements IProxy, Closeable {
 		} else {
 			creditscount -= ires.getSize();
 			// increase usage
-			proxycli.changeServer(new FileServerInfo(server.getAddress(), server
-			.getPort(), server.getUsage() + ires.getSize(), true));
-			
+			proxycli.changeServer(new FileServerInfo(server.getAddress(), server.getPort(), server.getUsage() + ires.getSize(), true));
+
 			for (UserInfo u : proxycli.getUserList()) {
 				if (u.getName().equals(user)) {
 					proxycli.removeUser(u);
@@ -173,14 +188,11 @@ public class ProxyImpl implements IProxy, Closeable {
 			}
 		}
 
-		VersionResponse vres = (VersionResponse) ss.send(new VersionRequest(
-				filename));
-		String csum = ChecksumUtils.generateChecksum(user, filename,
-				vres.getVersion(), ires.getSize());
+		VersionResponse vres = (VersionResponse) ss.send(new VersionRequest(filename));
+		String csum = ChecksumUtils.generateChecksum(user, filename, vres.getVersion(), ires.getSize());
 
 		// create response
-		DownloadTicket dt = new DownloadTicket(user, filename, csum,
-				server.getAddress(), server.getPort());
+		DownloadTicket dt = new DownloadTicket(user, filename, csum, server.getAddress(), server.getPort());
 
 		return new DownloadTicketResponse(dt);
 	}
@@ -192,15 +204,15 @@ public class ProxyImpl implements IProxy, Closeable {
 
 		// check if any server is online
 		if (!proxycli.checkOnline())
-			return new MessageResponse(
-					"No servers online, failed to upload the file");
+			return new MessageResponse("No servers online, failed to upload the file");
 
 		ServerSenderTCP sstcp;
-		List<FileServerInfo> servers = proxycli.getServerList();
+		List<FileServerInfo> servers = getLowest(writeQuorum);
+		request = new UploadRequest(request.getFilename(), getLatestVersion(request.getFilename()), request.getContent());
 		MessageResponse ures = null;
 
 		for (FileServerInfo fs : servers) {
-			//TODO Stage1
+			// TODO Stage1
 			// get all servers, which are online and send each of them a
 			// uploadrequest
 			if (fs.isOnline()) {
@@ -241,9 +253,46 @@ public class ProxyImpl implements IProxy, Closeable {
 
 	@Override
 	public void close() throws IOException {
-		if(ss != null)
+		if (ss != null)
 			ss.close();
+	}
 
+	private ArrayList<FileServerInfo> getLowest(int number) throws IOException {
+		FileServerInfoResponse res = (FileServerInfoResponse) proxycli.fileservers();
+		List<FileServerInfo> list = res.getFileServerInfo();
+
+		Collections.sort(list, new Comparator<FileServerInfo>() {
+			@Override
+			public int compare(FileServerInfo fsi1, FileServerInfo fsi2) {
+				if (fsi1.getUsage() < fsi2.getUsage()) {
+					return -1;
+				}
+				if (fsi1.getUsage() == fsi2.getUsage()) {
+					return 0;
+				} else {
+					return 1;
+				}
+			}
+		});
+
+		ArrayList<FileServerInfo> returnList = new ArrayList<FileServerInfo>();
+
+		for (int i = 0; i < number; i++) {
+			returnList.add(list.get(i));
+		}
+
+		return returnList;
+	}
+
+	private int getLatestVersion(String name) throws IOException {
+		int version = 0;
+		for (FileServerInfo fsi : getLowest(readQuorum)) {
+			VersionResponse vs = (VersionResponse) ss.send(new VersionRequest(name));
+			if (vs.getVersion() > version) {
+				version = vs.getVersion();
+			}
+		}
+		return ++version;
 	}
 
 }

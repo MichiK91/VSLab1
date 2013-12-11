@@ -5,24 +5,33 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 
+import message.Response;
+import message.request.DownloadFileRequest;
+import message.request.InfoRequest;
+import message.request.UploadRequest;
+import message.request.VersionRequest;
+import message.response.DownloadFileResponse;
+import message.response.InfoResponse;
+import message.response.ListResponse;
+import message.response.MessageResponse;
+import message.response.VersionResponse;
 import util.ChecksumUtils;
 import util.Config;
-
-import message.Response;
-import message.request.*;
-import message.response.*;
 
 public class FileServerImpl implements IFileServer, Closeable {
 
 	private Config config;
 	private ProxySenderUDP sender;
+	private HashMap<String, Integer> versionMap;
 
 	public FileServerImpl(Config config) {
 		this.config = config;
 		this.sender = new ProxySenderUDP(this.config);
+		versionMap = new HashMap<String, Integer>();
 
 	}
 
@@ -42,11 +51,8 @@ public class FileServerImpl implements IFileServer, Closeable {
 
 	@Override
 	public Response download(DownloadFileRequest request) throws IOException {
-		
-		boolean check = ChecksumUtils.verifyChecksum(request.getTicket().getUsername(),
-				new File(config.getString("fileserver.dir") + "/"
-						+ request.getTicket().getFilename()), 1, request
-						.getTicket().getChecksum());
+
+		boolean check = ChecksumUtils.verifyChecksum(request.getTicket().getUsername(), new File(config.getString("fileserver.dir") + "/" + request.getTicket().getFilename()), 1, request.getTicket().getChecksum());
 
 		if (!check) {
 			return new MessageResponse("Invalid download ticket");
@@ -107,7 +113,7 @@ public class FileServerImpl implements IFileServer, Closeable {
 		for (File f : files) {
 			if (f.isFile()) {
 				if (f.getName().equals(request.getFilename())) {
-					version = 1;
+					version = versionMap.get(request.getFilename());
 				}
 			}
 		}
@@ -130,10 +136,10 @@ public class FileServerImpl implements IFileServer, Closeable {
 			}
 		}
 
-		FileOutputStream out = new FileOutputStream(dir + "/"
-				+ request.getFilename());
+		FileOutputStream out = new FileOutputStream(dir + "/" + request.getFilename());
 		out.write(request.getContent());
 		out.close();
+		versionMap.put(request.getFilename(), request.getVersion());
 		return new MessageResponse("successfully uploaded");
 	}
 

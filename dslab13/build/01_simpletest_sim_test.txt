@@ -1,6 +1,7 @@
 *	startProxy proxy
 *	startClient client
 *	startFileServer fs1
+*	startFileServer fs2
 
 client:	!login alice 12345
 client: !credits
@@ -11,5 +12,6 @@ client: !credits
 client: !logout
 proxy:	!exit
 fs1:	!exit
+fs2:	!exit
 client:	!exit
 
