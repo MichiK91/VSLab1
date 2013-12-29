@@ -41,8 +41,8 @@ public class ProxyImpl implements IProxy, Closeable {
 	private boolean loggedin;
 	private ProxyCli proxycli;
 	private ServerSenderTCP ss;
-	int readQuorum = 2;
-	int writeQuorum = 2;
+	int readQuorum = -1;
+	int writeQuorum = -1;
 
 	public ProxyImpl(ProxyCli proxycli) {
 		this.userconfig = new Config("user");
@@ -206,9 +206,13 @@ public class ProxyImpl implements IProxy, Closeable {
 		if (!proxycli.checkOnline())
 			return new MessageResponse("No servers online, failed to upload the file");
 
+		if (readQuorum < 0) {
+			readQuorum = proxycli.getReadQuroum();
+		}
+
 		ServerSenderTCP sstcp;
 		List<FileServerInfo> servers = getLowest(writeQuorum);
-		request = new UploadRequest(request.getFilename(), getLatestVersion(request.getFilename()), request.getContent());
+		request = new UploadRequest(request.getFilename(), getLatestVersion(request.getFilename()) + 1, request.getContent());
 		MessageResponse ures = null;
 
 		for (FileServerInfo fs : servers) {
@@ -292,7 +296,7 @@ public class ProxyImpl implements IProxy, Closeable {
 				version = vs.getVersion();
 			}
 		}
-		return ++version;
+		return version;
 	}
 
 }
