@@ -154,47 +154,57 @@ public class ProxyImpl implements IProxy, Closeable {
 			return new MessageResponse("No servers online");
 		}
 
+		// get latest Version
+		int version = getLatestVersion(filename).getVersion();
+
 		// get list of names
-		FileServerInfo server = proxycli.getOnlineServer();
-		ss = new ServerSenderTCP(server.getAddress(), server.getPort());
-		ListResponse lres = (ListResponse) ss.send(new ListRequest());
-		Set<String> names = null;
-		try {
-			names = lres.getFileNames();
-		} catch (Exception e) {
-			// server has gone offline in meantime
-			// sent to fast
-			return null;
-		}
-		if (!names.contains(filename)) {
-			return new MessageResponse("Invalid file name");
-		}
+		for (FileServerInfo fsi : getLowest(readQuorum)) {
+			FileServerInfo server = fsi;
+			ss = new ServerSenderTCP(server.getAddress(), server.getPort());
+			ListResponse lres = (ListResponse) ss.send(new ListRequest());
+			Set<String> names = null;
+			try {
+				names = lres.getFileNames();
+			} catch (Exception e) {
+				// server has gone offline in meantime
+				// sent to fast
+				return null;
+			}
+			if (!names.contains(filename)) {
+				return new MessageResponse("Invalid file name");
+			} else {
+				VersionResponse vRes = (VersionResponse) ss.send(new VersionRequest(filename));
+				if (version == vRes.getVersion()) {
 
-		// check credits and reduce them
-		InfoResponse ires = (InfoResponse) ss.send(new InfoRequest(filename));
-		if (ires.getSize() > creditscount) {
-			return new MessageResponse("Not enough credits available");
-		} else {
-			creditscount -= ires.getSize();
-			// increase usage
-			proxycli.changeServer(new FileServerInfo(server.getAddress(), server.getPort(), server.getUsage() + ires.getSize(), true));
+					// check credits and reduce them
+					InfoResponse ires = (InfoResponse) ss.send(new InfoRequest(filename));
+					if (ires.getSize() > creditscount) {
+						return new MessageResponse("Not enough credits available");
+					} else {
+						creditscount -= ires.getSize();
+						// increase usage
+						proxycli.changeServer(new FileServerInfo(server.getAddress(), server.getPort(), server.getUsage() + ires.getSize(), true));
 
-			for (UserInfo u : proxycli.getUserList()) {
-				if (u.getName().equals(user)) {
-					proxycli.removeUser(u);
-					proxycli.addUser(new UserInfo(user, creditscount, true));
-					break;
+						for (UserInfo u : proxycli.getUserList()) {
+							if (u.getName().equals(user)) {
+								proxycli.removeUser(u);
+								proxycli.addUser(new UserInfo(user, creditscount, true));
+								break;
+							}
+						}
+					}
+
+					VersionResponse vres = (VersionResponse) ss.send(new VersionRequest(filename));
+					String csum = ChecksumUtils.generateChecksum(user, filename, vres.getVersion(), ires.getSize());
+
+					// create response
+					DownloadTicket dt = new DownloadTicket(user, filename, csum, server.getAddress(), server.getPort());
+
+					return new DownloadTicketResponse(dt);
 				}
 			}
 		}
-
-		VersionResponse vres = (VersionResponse) ss.send(new VersionRequest(filename));
-		String csum = ChecksumUtils.generateChecksum(user, filename, vres.getVersion(), ires.getSize());
-
-		// create response
-		DownloadTicket dt = new DownloadTicket(user, filename, csum, server.getAddress(), server.getPort());
-
-		return new DownloadTicketResponse(dt);
+		return null;
 	}
 
 	@Override
@@ -212,7 +222,7 @@ public class ProxyImpl implements IProxy, Closeable {
 
 		ServerSenderTCP sstcp;
 		List<FileServerInfo> servers = getLowest(writeQuorum);
-		request = new UploadRequest(request.getFilename(), getLatestVersion(request.getFilename()) + 1, request.getContent());
+		request = new UploadRequest(request.getFilename(), getLatestVersion(request.getFilename()).getVersion() + 1, request.getContent());
 		MessageResponse ures = null;
 
 		for (FileServerInfo fs : servers) {
@@ -288,7 +298,7 @@ public class ProxyImpl implements IProxy, Closeable {
 		return returnList;
 	}
 
-	private int getLatestVersion(String name) throws IOException {
+	private VersionResponse getLatestVersion(String name) throws IOException {
 		int version = 0;
 		for (FileServerInfo fsi : getLowest(readQuorum)) {
 			VersionResponse vs = (VersionResponse) ss.send(new VersionRequest(name));
@@ -296,7 +306,7 @@ public class ProxyImpl implements IProxy, Closeable {
 				version = vs.getVersion();
 			}
 		}
-		return version;
+		return new VersionResponse(name, version);
 	}
 
 }
