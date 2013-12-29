@@ -2,6 +2,10 @@ package your;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.rmi.RemoteException;
+
+import proxy.IProxyRMI;
+import proxy.ProxyRMI;
 
 import cli.Shell;
 
@@ -10,14 +14,14 @@ import util.Config;
 
 public class Proxy {
 
-	
+
 	public static void main(String[] args) {
-		System.out.println("Hello World");
+
 		Config config = new Config("proxy");
 		Shell shell = new Shell("proxy", new DataOutputStream(System.out), new DataInputStream(System.in));
-		
+
 		ComponentFactory fact = new ComponentFactory();
-		
+
 		try {
 			fact.startProxy(config, shell);
 		} catch (Exception e) {

@@ -10,7 +10,7 @@ import message.Response;
 public interface IProxyRMI extends Remote {
 	
 	@Command
-	Response readQuorum() throws RemoteException;
+	int readQuorum() throws RemoteException;
 	
 	@Command
 	Response writeQuorum() throws RemoteException;
