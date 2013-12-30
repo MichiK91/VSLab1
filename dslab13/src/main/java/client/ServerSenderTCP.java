@@ -10,7 +10,7 @@ import java.net.Socket;
 import message.Request;
 import message.Response;
 
-public class ServerSenderTCP implements Closeable {
+public class ServerSenderTCP implements Closeable, Sender {
 	private Socket socket;
 	private ObjectOutputStream strout;
 	private ObjectInputStream strin;
@@ -31,7 +31,7 @@ public class ServerSenderTCP implements Closeable {
 		}
 	}
 	
-	public Response send(Request req) throws IOException{
+	public void send(Request req) throws IOException{
 		connect();
 		//send request
 		strout = new ObjectOutputStream(socket.getOutputStream());
@@ -45,7 +45,6 @@ public class ServerSenderTCP implements Closeable {
 			e.printStackTrace();
 		}
 		close();
-		return res;
 	}
 
 	@Override
@@ -54,5 +53,11 @@ public class ServerSenderTCP implements Closeable {
 		strout.close();
 		socket.close();
 	}
+
+  @Override
+  public Response receive() {
+    // TODO Auto-generated method stub
+    return null;
+  }
 	
 }

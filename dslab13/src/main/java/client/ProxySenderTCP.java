@@ -12,11 +12,11 @@ import message.Response;
 import message.Request;
 import util.Config;
 
-public class ProxySenderTCP implements Closeable {
+public class ProxySenderTCP implements Closeable, Sender {
 	private Config config;
 	private Socket socket;
-	private ObjectOutputStream strout;
-	private ObjectInputStream strin;
+	ObjectOutputStream strout;
+	ObjectInputStream strin;
 
 	public ProxySenderTCP(Config config) throws UnknownHostException,
 			IOException {
@@ -33,7 +33,7 @@ public class ProxySenderTCP implements Closeable {
 		strin = new ObjectInputStream(socket.getInputStream());
 	}
 
-	public Response send(Request req) {
+	public void send(Request req) {
 		
 		// send request
 		try {
@@ -41,23 +41,27 @@ public class ProxySenderTCP implements Closeable {
 		} catch (Exception e) {
 			//proxy already closed
 			System.out.println("Proxy has gone offline");
-			return null;
 		}
 
-		// get response
-		Response res = null;
-		try {
-			res = (Response) strin.readObject();
-		} catch (ClassNotFoundException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			//proxy already closed
-			System.out.println("Proxy has gone offline");
-			return null;
-		}
-		return res;
+		
 	}
 
+  @Override
+  public Response receive() {
+ // get response
+    Response res = null;
+    try {
+      res = (Response) strin.readObject();
+    } catch (ClassNotFoundException e) {
+      e.printStackTrace();
+    } catch (IOException e) {
+      //proxy already closed
+      System.out.println("Proxy has gone offline");
+      return null;
+    }
+    return res;
+  }
+  
 	@Override
 	public void close() throws IOException {
 		strin.close();

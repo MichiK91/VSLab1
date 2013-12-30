@@ -54,7 +54,9 @@ public class ClientCli implements IClientCli {
 	public LoginResponse login(String username, String password)
 			throws IOException {
 		LoginRequest lreq = new LoginRequest(username,password);
-		LoginResponse lres = (LoginResponse) psender.send(lreq);
+		ProxySenderBase64 proxySender = new ProxySenderBase64(psender);
+		proxySender.send(lreq);
+		LoginResponse lres = (LoginResponse) proxySender.receive();
 		if(lres.getType().equals(LoginResponse.Type.SUCCESS)){
 			login = true;
 		}
@@ -65,7 +67,8 @@ public class ClientCli implements IClientCli {
 	@Command
 	public Response credits() throws IOException {
 		CreditsRequest creq = new CreditsRequest();
-		Response res = psender.send(creq);
+		psender.send(creq);
+		Response res = psender.receive();
 		return res;
 	}
 
@@ -73,7 +76,8 @@ public class ClientCli implements IClientCli {
 	@Command
 	public Response buy(long credits) throws IOException {
 		BuyRequest breq = new BuyRequest(credits);
-		Response res = psender.send(breq);
+		psender.send(breq);
+    Response res = psender.receive();
 		return res;
 	}
 
@@ -81,7 +85,8 @@ public class ClientCli implements IClientCli {
 	@Command
 	public Response list() throws IOException {
 		ListRequest lreq = new ListRequest();
-		Response res = psender.send(lreq);
+		psender.send(lreq);
+    Response res = psender.receive();
 		return res;
 	}
 
@@ -89,7 +94,8 @@ public class ClientCli implements IClientCli {
 	@Command
 	public Response download(String filename) throws IOException {
 		DownloadTicketRequest dtreq = new DownloadTicketRequest(filename);
-		Object res = psender.send(dtreq);
+		psender.send(dtreq);
+    Response res = psender.receive();
 		DownloadTicketResponse dtres;
 		if(res instanceof DownloadTicketResponse){
 			dtres = (DownloadTicketResponse) res;
@@ -103,7 +109,9 @@ public class ClientCli implements IClientCli {
 		DownloadFileRequest dfreq = new DownloadFileRequest(dt);
 		ssender = new ServerSenderTCP(dt.getAddress(), dt.getPort());
 		
-		Object res1 = ssender.send(dfreq);
+		psender.send(dfreq);
+    Response res1 = ssender.receive();
+
 		DownloadFileResponse dfres;
 		if(res1 instanceof DownloadFileResponse){
 			dfres = (DownloadFileResponse) res1;
@@ -168,7 +176,8 @@ public class ClientCli implements IClientCli {
 		if(!foundfile)
 			return new MessageResponse("Invalid file name");
 		UploadRequest ureq = new UploadRequest(filename, 1, content);
-		MessageResponse res = (MessageResponse) psender.send(ureq);
+		psender.send(ureq);
+		MessageResponse res = (MessageResponse) psender.receive();
 		return res;
 	}
 
@@ -176,7 +185,9 @@ public class ClientCli implements IClientCli {
 	@Command
 	public MessageResponse logout() throws IOException {
 		LogoutRequest lreq = new LogoutRequest();
-		MessageResponse mres = (MessageResponse) psender.send(lreq);
+		
+		psender.send(lreq);
+		MessageResponse mres = (MessageResponse) psender.receive();
 		login = false;
 		return mres;
 	}
