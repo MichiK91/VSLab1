@@ -71,11 +71,11 @@ public class ProxyRMI implements IProxyRMI{
 		
 		if(size >= 3){
 			for(int i = 0; i < 3; i++){
-				ret += i + " " + findMax(map);
+				ret += "\n" + (i+1) + ". " + findMax(map);
 			}
 		} else{
 			for(int i = 0; i < size; i++){
-				ret += i + " " + findMax(map);
+				ret += "\n" + (i+1) + ". " + findMax(map);
 			}
 			for(int i = 0; i < 3-size; i++){
 				ret += "\n" + "-";
@@ -140,7 +140,7 @@ public class ProxyRMI implements IProxyRMI{
 		}
 		map.remove(maxname);
 		 
-		return "\n" + maxname + " " + max;
+		return maxname + " " + max;
 	}
 
 

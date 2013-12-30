@@ -31,6 +31,7 @@ public class ClientRMI implements IClientRMI{
 			Registry registry = LocateRegistry.getRegistry(getProxyHost(), getProxyRMIPort());
 			stub = (IProxyRMI) registry.lookup(getBindingName());
 		} catch (Exception e1) {
+			System.err.println("No proxy available.");
 			e1.printStackTrace();
 		}
 	}

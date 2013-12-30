@@ -190,7 +190,8 @@ public class ClientCli implements IClientCli {
 	@Override
 	@Command
 	public MessageResponse exit() throws IOException {
-		rmi.close();
+		if(rmi != null)
+			rmi.close();
 		if(login)
 			logout();
 		if(psender != null)
