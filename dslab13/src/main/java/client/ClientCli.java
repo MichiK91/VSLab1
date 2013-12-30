@@ -28,6 +28,8 @@ public class ClientCli implements IClientCli {
 	private ServerSenderTCP ssender;
 	
 	private boolean login;
+	
+	private ClientRMI rmi;
 
 	public ClientCli(Config config, Shell shell) throws IOException {
 		this.config = config;
@@ -46,6 +48,10 @@ public class ClientCli implements IClientCli {
 			System.err.println("No proxy available. Please press enter to exit.");			
 			exit();
 		}
+		
+		//start RMI
+		rmi = new ClientRMI(this);
+		this.shell.register(rmi);
 
 	}
 
@@ -184,6 +190,7 @@ public class ClientCli implements IClientCli {
 	@Override
 	@Command
 	public MessageResponse exit() throws IOException {
+		rmi.close();
 		if(login)
 			logout();
 		if(psender != null)
@@ -191,6 +198,10 @@ public class ClientCli implements IClientCli {
 		threads.shutdownNow();
 		shell.close();
 		return null;
+	}
+	
+	public boolean isLogin() {
+		return login;
 	}
 
 }

@@ -2,6 +2,7 @@ package proxy;
 
 import java.rmi.AlreadyBoundException;
 import java.rmi.Naming;
+import java.rmi.NoSuchObjectException;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.rmi.registry.Registry;
@@ -10,6 +11,7 @@ import java.rmi.registry.LocateRegistry;
 import util.Config;
 
 import message.Response;
+import message.response.MessageResponse;
 import cli.Command;
 
 public class ProxyRMI implements IProxyRMI{
@@ -17,11 +19,11 @@ public class ProxyRMI implements IProxyRMI{
 	private Config config;
 	private ProxyCli proxy;
 
-	public ProxyRMI(/*ProxyCli proxy*/){
+	public ProxyRMI(ProxyCli proxy){
 		this.config = new Config("mc");
-		//this.proxy = proxy; //TODO
+		this.proxy = proxy;
 		
-		//TODO in Proxy auslagern
+	
 		try {
 			IProxyRMI stub = (IProxyRMI) UnicastRemoteObject.exportObject(this, 0);
 
@@ -37,14 +39,12 @@ public class ProxyRMI implements IProxyRMI{
 
 	@Override
 	public Response readQuorum() throws RemoteException {
-		// TODO Auto-generated method stub
-		return null;
+		return new MessageResponse("Read-Quorom is set to " + proxy.getReadQuroum());
 	}
 
 	@Override
 	public Response writeQuorum() throws RemoteException {
-		// TODO Auto-generated method stub
-		return null;
+		return new MessageResponse("Write-Quorom is set to " + proxy.getWriteQuorum());
 	}
 
 	@Override
@@ -70,6 +70,15 @@ public class ProxyRMI implements IProxyRMI{
 	public Response setUserPublicKey(String username) throws RemoteException {
 		// TODO Auto-generated method stub
 		return null;
+	}
+	
+	public void close(){
+		try {
+			UnicastRemoteObject.unexportObject(this, true);
+		} catch (NoSuchObjectException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 	
 	public String getBindingName(){

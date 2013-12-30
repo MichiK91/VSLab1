@@ -2,11 +2,14 @@ package client;
 
 import java.net.MalformedURLException;
 import java.rmi.Naming;
+import java.rmi.NoSuchObjectException;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
+import java.rmi.server.UnicastRemoteObject;
 
+import message.Response;
 import message.response.MessageResponse;
 import cli.Command;
 
@@ -16,14 +19,17 @@ import util.Config;
 public class ClientRMI implements IClientRMI{
 
 	private Config config;
+	private ClientCli client;
+	private IProxyRMI stub;
 	
-	public ClientRMI(){
+	public ClientRMI(ClientCli client){
 		this.config = new Config("mc");
+		this.client = client;
 		
 		//init
 		try {
 			Registry registry = LocateRegistry.getRegistry(getProxyHost(), getProxyRMIPort());
-			IProxyRMI stub = (IProxyRMI) registry.lookup(getBindingName());
+			stub = (IProxyRMI) registry.lookup(getBindingName());
 		} catch (Exception e1) {
 			e1.printStackTrace();
 		}
@@ -31,44 +37,48 @@ public class ClientRMI implements IClientRMI{
 	
 	@Override
 	@Command
-	public MessageResponse readQuorum() {
+	public Response readQuorum() throws RemoteException {
+		return stub.readQuorum();
+	}
+
+	@Override
+	@Command
+	public Response writeQuorum() throws RemoteException{
+		return stub.writeQuorum();
+	}
+
+	@Override
+	@Command
+	public Response topThreeDownloads() throws RemoteException{
 		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
 	@Command
-	public MessageResponse writeQuorum() {
+	public Response subscribe(String filename, int numberOfDownloads) throws RemoteException{
+		if(!client.isLogin())
+			return new MessageResponse("You have to log in");
 		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
 	@Command
-	public MessageResponse topThreeDownloads() {
+	public Response getProxyPublicKey() throws RemoteException{
 		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
 	@Command
-	public MessageResponse subscribe(String filename, int numberOfDownloads) {
+	public Response setUserPublicKey(String username) throws RemoteException{
 		// TODO Auto-generated method stub
 		return null;
 	}
-
-	@Override
-	@Command
-	public MessageResponse getProxyPublicKey() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	@Command
-	public MessageResponse setUserPublicKey(String username) {
-		// TODO Auto-generated method stub
-		return null;
+	
+	public void close(){
+		//TODO ??
 	}
 	
 	public String getBindingName(){
