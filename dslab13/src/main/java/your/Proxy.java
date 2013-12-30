@@ -16,6 +16,7 @@ public class Proxy {
 
 
 	public static void main(String[] args) {
+//		IProxyRMI rmi = new ProxyRMI();
 		Config config = new Config("proxy");
 		Shell shell = new Shell("proxy", new DataOutputStream(System.out), new DataInputStream(System.in));
 
