@@ -157,8 +157,17 @@ public class ProxyImpl implements IProxy, Closeable {
 		// get latest Version
 		int version = getLatestVersion(filename).getVersion();
 
+		if (readQuorum < 0) {
+			readQuorum = proxycli.getReadQuroum();
+		}
+
 		// get list of names
+		// System.out.println("asdf");
+		// System.out.println("readQuorum: " + getLowest(readQuorum));
+		// System.out.println("after read");
+
 		for (FileServerInfo fsi : getLowest(readQuorum)) {
+
 			FileServerInfo server = fsi;
 			ss = new ServerSenderTCP(server.getAddress(), server.getPort());
 			ListResponse lres = (ListResponse) ss.send(new ListRequest());
@@ -175,7 +184,6 @@ public class ProxyImpl implements IProxy, Closeable {
 			} else {
 				VersionResponse vRes = (VersionResponse) ss.send(new VersionRequest(filename));
 				if (version == vRes.getVersion()) {
-
 					// check credits and reduce them
 					InfoResponse ires = (InfoResponse) ss.send(new InfoRequest(filename));
 					if (ires.getSize() > creditscount) {
@@ -218,6 +226,10 @@ public class ProxyImpl implements IProxy, Closeable {
 
 		if (readQuorum < 0) {
 			readQuorum = proxycli.getReadQuroum();
+		}
+
+		if (writeQuorum < 0) {
+			writeQuorum = proxycli.getWriteQuorum();
 		}
 
 		ServerSenderTCP sstcp;

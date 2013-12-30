@@ -1,22 +1,28 @@
 package test;
 
-import cli.Shell;
-import cli.TestInputStream;
-import cli.TestOutputStream;
-import org.junit.Before;
-import org.junit.Test;
-import util.ComponentFactory;
-import util.Config;
-import util.CliComponent;
-import util.Util;
+import static util.TestUtils.readLines;
+import static util.TestUtils.repeat;
 
-import java.io.*;
+import java.io.File;
+import java.io.FilenameFilter;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.nio.charset.Charset;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
-import static util.TestUtils.*;
+import org.junit.Before;
+import org.junit.Test;
+
+import util.CliComponent;
+import util.ComponentFactory;
+import util.Config;
+import util.Util;
+import cli.Shell;
+import cli.TestInputStream;
+import cli.TestOutputStream;
 
 public class ApiTest {
 
@@ -24,11 +30,9 @@ public class ApiTest {
 	Map<String, CliComponent> componentMap = new HashMap<String, CliComponent>();
 	CliComponent component;
 
-
 	@Before
 	public void setUp() throws Exception {
 	}
-
 
 	@Test
 	public void test() throws Throwable {
@@ -69,9 +73,9 @@ public class ApiTest {
 					String terminal = parts[2];
 
 					Map<String, Class<?>[]> args = new HashMap<String, Class<?>[]>();
-					args.put("startClient", new Class<?>[]{Config.class, Shell.class});
-					args.put("startProxy", new Class<?>[]{Config.class, Shell.class});
-					args.put("startFileServer", new Class<?>[]{Config.class, Shell.class});
+					args.put("startClient", new Class<?>[] { Config.class, Shell.class });
+					args.put("startProxy", new Class<?>[] { Config.class, Shell.class });
+					args.put("startFileServer", new Class<?>[] { Config.class, Shell.class });
 
 					Method method = factory.getClass().getMethod(instruction, args.get(instruction));
 					if (method == null) {
@@ -85,6 +89,9 @@ public class ApiTest {
 					CliComponent cliComponent = new CliComponent(component, shell, out, in);
 					componentMap.put(terminal, cliComponent);
 					Thread.sleep(Util.WAIT_FOR_COMPONENT_STARTUP);
+				} else if (line.startsWith("%")) {
+					System.out.println(line.substring(1));
+					System.out.println(repeat('-', 80));
 				}
 				/*
 				 * CLI
@@ -93,8 +100,7 @@ public class ApiTest {
 					String[] parts = line.split("[:\\s+]", 2);
 					component = componentMap.get(parts[0]);
 					if (component == null) {
-						throw new IllegalStateException(String.format(
-								"Cannot find component '%s'. Please start it before using it.", parts[0]));
+						throw new IllegalStateException(String.format("Cannot find component '%s'. Please start it before using it.", parts[0]));
 					}
 					component.getIn().addLine(parts[1].trim());
 					Thread.sleep(500);
