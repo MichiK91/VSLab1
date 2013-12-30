@@ -9,21 +9,15 @@ import message.Response;
 
 public interface IProxyRMI extends Remote {
 	
-	@Command
-	int readQuorum() throws RemoteException;
+	public Response readQuorum() throws RemoteException;
 	
-	@Command
-	Response writeQuorum() throws RemoteException;
+	public Response writeQuorum() throws RemoteException;
 	
-	@Command
-	Response topThreeDownloads() throws RemoteException;
+	public Response topThreeDownloads() throws RemoteException;
 	
-	@Command
-	Response subscribe(String filename, long numberOfDownloads) throws RemoteException;
+	public Response subscribe(String filename, long numberOfDownloads) throws RemoteException;
 
-	@Command
-	Response getProxyPublicKey() throws RemoteException;
+	public Response getProxyPublicKey() throws RemoteException;
 	
-	@Command
-	Response setUserPublicKey(String username) throws RemoteException;
+	public Response setUserPublicKey(String username) throws RemoteException;
 }
