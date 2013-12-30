@@ -169,7 +169,14 @@ public class ProxyCli implements IProxyCli {
 				onlineServer++;
 			}
 		}
-		return (int) Math.ceil(onlineServer / 2) + 1;
+		int ret = (int) (Math.ceil(onlineServer / 2d) + 1d);
+
+		if (onlineServer == 1) {
+			return 1;
+		} else {
+			return ret;
+		}
+
 	}
 
 }
