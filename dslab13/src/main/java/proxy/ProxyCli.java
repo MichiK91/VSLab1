@@ -32,6 +32,8 @@ public class ProxyCli implements IProxyCli {
 	private ExecutorService threads = Executors.newCachedThreadPool();
 
 	private ResourceBundle bundle;
+	
+	private ProxyRMI rmi;
 
 	public ProxyCli(Config config, Shell shell) throws SocketException {
 
@@ -52,6 +54,9 @@ public class ProxyCli implements IProxyCli {
 		setServerList();
 		this.c_accept = new ClientAccept(this.config, this);
 		this.threads.execute(this.c_accept);
+		
+		//start rmi
+		rmi = new ProxyRMI(this);
 
 	}
 
@@ -71,6 +76,7 @@ public class ProxyCli implements IProxyCli {
 	@Override
 	@Command
 	public MessageResponse exit() throws IOException {
+		rmi.close();
 		c_accept.close();
 		s_listener.close();
 		threads.shutdownNow();
@@ -152,7 +158,6 @@ public class ProxyCli implements IProxyCli {
 
 	public int getReadQuroum() {
 		int onlineServer = 0;
-		System.out.println("Server: " + servers);
 		for (FileServerInfo fsi : servers) {
 			if (fsi.isOnline()) {
 				onlineServer++;
