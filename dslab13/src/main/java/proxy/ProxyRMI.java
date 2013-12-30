@@ -1,6 +1,7 @@
 package proxy;
 
 import java.rmi.AlreadyBoundException;
+import java.rmi.Naming;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.rmi.registry.Registry;
@@ -10,18 +11,19 @@ import message.Response;
 import cli.Command;
 
 public class ProxyRMI implements IProxyRMI{
-	
+
 	public ProxyRMI(){
 		try {
 			IProxyRMI stub = (IProxyRMI) UnicastRemoteObject.exportObject(this, 0);
-		
-		Registry registry = LocateRegistry.getRegistry();
-        
-			registry.bind("IProxyRMI", stub);
+
+			LocateRegistry.createRegistry(Registry.REGISTRY_PORT);
+
+			Naming.rebind("RMI", stub);
+			
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-        
+
 	}
 
 	@Override

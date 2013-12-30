@@ -1,5 +1,7 @@
 package client;
 
+import java.net.MalformedURLException;
+import java.rmi.Naming;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
@@ -12,16 +14,11 @@ public class ClientRMI {
 	public ClientRMI(){
 		Registry registry;
 		try {
-			registry = LocateRegistry.getRegistry("proxy.ProxyRMI");
-			IProxyRMI stub = (IProxyRMI) registry.lookup("IProxyRMI");
+			IProxyRMI stub = (IProxyRMI) Naming.lookup("RMI");
 			int res = stub.readQuorum();
 			System.out.println(res);
-		} catch (RemoteException e1) {
-			// TODO Auto-generated catch block
+		} catch (Exception e1) {
 			e1.printStackTrace();
-		} catch (NotBoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
 		}
 	}
 	
