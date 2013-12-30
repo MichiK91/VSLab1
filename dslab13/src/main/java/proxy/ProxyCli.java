@@ -4,7 +4,9 @@ import java.io.IOException;
 import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -34,6 +36,8 @@ public class ProxyCli implements IProxyCli {
 	private ResourceBundle bundle;
 	
 	private ProxyRMI rmi;
+	
+	private Map<String, Integer> downloadstats;
 
 	public ProxyCli(Config config, Shell shell) throws SocketException {
 
@@ -56,7 +60,9 @@ public class ProxyCli implements IProxyCli {
 		this.threads.execute(this.c_accept);
 		
 		//start rmi
-		rmi = new ProxyRMI(this);
+		this.rmi = new ProxyRMI(this);
+		
+		this.downloadstats = new HashMap<String, Integer>();
 
 	}
 
@@ -132,7 +138,6 @@ public class ProxyCli implements IProxyCli {
 	}
 
 	public FileServerInfo getOnlineServer() {
-		// TODO Stage1
 		FileServerInfo server = new FileServerInfo(null, 0, 0, false);
 		long usage = Long.MAX_VALUE;
 		for (FileServerInfo f : servers) {
@@ -182,6 +187,23 @@ public class ProxyCli implements IProxyCli {
 			return ret;
 		}
 
+	}
+	
+	public void updateStats(String filename){
+		if(downloadstats.containsKey(filename)){
+			Integer i = downloadstats.get(filename);
+			i++;
+			downloadstats.put(filename, i);
+			System.out.println("YEES " + i);
+		}
+		else{
+			downloadstats.put(filename, 1);
+			System.out.println("NO");
+		}
+	}
+	
+	public Map<String, Integer> getDownloadStats(){
+		return downloadstats;
 	}
 
 }

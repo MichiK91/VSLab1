@@ -203,5 +203,6 @@ public class ClientCli implements IClientCli {
 	public boolean isLogin() {
 		return login;
 	}
+	
 
 }

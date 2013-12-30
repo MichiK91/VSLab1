@@ -5,7 +5,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import message.Response;
@@ -41,8 +43,10 @@ public class ProxyImpl implements IProxy, Closeable {
 	private boolean loggedin;
 	private ProxyCli proxycli;
 	private ServerSenderTCP ss;
-	int readQuorum = -1;
-	int writeQuorum = -1;
+	private int readQuorum = -1;
+	private int writeQuorum = -1;
+	
+	
 
 	public ProxyImpl(ProxyCli proxycli) {
 		this.userconfig = new Config("user");
@@ -207,6 +211,9 @@ public class ProxyImpl implements IProxy, Closeable {
 
 					// create response
 					DownloadTicket dt = new DownloadTicket(user, filename, csum, server.getAddress(), server.getPort());
+					
+					//update statistics
+					proxycli.updateStats(filename);
 
 					return new DownloadTicketResponse(dt);
 				}

@@ -50,8 +50,7 @@ public class ClientRMI implements IClientRMI{
 	@Override
 	@Command
 	public Response topThreeDownloads() throws RemoteException{
-		// TODO Auto-generated method stub
-		return null;
+		return stub.topThreeDownloads();
 	}
 
 	@Override
