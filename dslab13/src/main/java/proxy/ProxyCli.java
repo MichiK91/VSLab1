@@ -152,12 +152,14 @@ public class ProxyCli implements IProxyCli {
 
 	public int getReadQuroum() {
 		int onlineServer = 0;
+		System.out.println("Server: " + servers);
 		for (FileServerInfo fsi : servers) {
 			if (fsi.isOnline()) {
 				onlineServer++;
 			}
 		}
-		return (int) Math.ceil(onlineServer / 2);
+		double dd = (onlineServer / 2d);
+		return (int) Math.ceil(dd);
 	}
 
 	public int getWriteQuorum() {

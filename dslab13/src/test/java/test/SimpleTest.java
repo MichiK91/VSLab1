@@ -1,20 +1,22 @@
 package test;
 
-import cli.Shell;
-import cli.TestInputStream;
-import cli.TestOutputStream;
-import client.IClientCli;
+import static org.junit.Assert.assertTrue;
+
+import java.io.IOException;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
 import proxy.IProxyCli;
 import server.IFileServerCli;
 import util.ComponentFactory;
 import util.Config;
 import util.Util;
-
-import java.io.IOException;
-import static org.junit.Assert.assertTrue;
+import cli.Shell;
+import cli.TestInputStream;
+import cli.TestOutputStream;
+import client.IClientCli;
 
 public class SimpleTest {
 	static ComponentFactory componentFactory = new ComponentFactory();
@@ -60,7 +62,6 @@ public class SimpleTest {
 		}
 	}
 
-
 	@Test
 	public void test() throws Exception {
 		String actual = client.login("alice", "12345").toString();
@@ -78,7 +79,7 @@ public class SimpleTest {
 		actual = client.credits().toString();
 		expected = "192";
 		assertTrue(String.format("Response must contain '%s' but was '%s'", expected, actual), actual.contains(expected));
-		
+
 		actual = client.upload("upload.txt").toString();
 		expected = "success";
 		assertTrue(String.format("Response must contain '%s' but was '%s'", expected, actual), actual.contains(expected));
@@ -90,6 +91,6 @@ public class SimpleTest {
 		actual = client.logout().toString();
 		expected = "Successfully logged out.";
 		assertTrue(String.format("Response must contain '%s' but was '%s'", expected, actual), actual.contains(expected));
-		
+
 	}
 }
