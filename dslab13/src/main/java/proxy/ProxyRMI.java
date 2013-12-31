@@ -24,7 +24,9 @@ import util.Config;
 
 import message.Response;
 import message.response.MessageResponse;
+import model.Subscriber;
 import cli.Command;
+import client.ClientRMI;
 
 public class ProxyRMI implements IProxyRMI{
 
@@ -86,10 +88,10 @@ public class ProxyRMI implements IProxyRMI{
 	}
 
 	@Override
-	public Response subscribe(String filename, long numberOfDownloads)
+	public Response subscribe(String filename, long numberOfDownloads, String username, ClientRMI callbackobject)
 			throws RemoteException {
-		// TODO Auto-generated method stub
-		return null;
+		proxy.addSubscriber(new Subscriber(filename, numberOfDownloads, callbackobject));
+		return new MessageResponse("Succesfully subscribed for file: " + filename);
 	}
 
 	@Override

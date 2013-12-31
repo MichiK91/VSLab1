@@ -18,7 +18,7 @@ public interface IClientRMI {
 	
 	
 	@Command
-	public Response subscribe(String filename, int numberOfDownloads) throws RemoteException;
+	public Response subscribe(String filename, long numberOfDownloads) throws RemoteException;
 	
 	@Command
 	public Response getProxyPublicKey() throws RemoteException; 

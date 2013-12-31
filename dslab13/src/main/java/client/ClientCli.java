@@ -5,6 +5,8 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.UnknownHostException;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -30,11 +32,14 @@ public class ClientCli implements IClientCli {
 	private boolean login;
 	
 	private ClientRMI rmi;
+	
+	private String username;
 
 	public ClientCli(Config config, Shell shell) throws IOException {
 		this.config = config;
 		this.shell = shell;
 		this.login = false;
+		this.username = "";
 
 		// register the shell
 		this.shell.register(this);
@@ -62,6 +67,7 @@ public class ClientCli implements IClientCli {
 		LoginRequest lreq = new LoginRequest(username,password);
 		LoginResponse lres = (LoginResponse) psender.send(lreq);
 		if(lres.getType().equals(LoginResponse.Type.SUCCESS)){
+			this.username = username;
 			login = true;
 		}
 		return lres;
@@ -184,6 +190,7 @@ public class ClientCli implements IClientCli {
 		LogoutRequest lreq = new LogoutRequest();
 		MessageResponse mres = (MessageResponse) psender.send(lreq);
 		login = false;
+		this.username = "";
 		return mres;
 	}
 
@@ -202,7 +209,17 @@ public class ClientCli implements IClientCli {
 	}
 	
 	public boolean isLogin() {
-		return login;
+		return this.login;
+	}
+	
+	public String getUsername(){
+		return this.username;
+	}
+	
+	public Set<String> getListOfFiles() throws IOException {
+		ListRequest lreq = new ListRequest();
+		ListResponse res = (ListResponse) psender.send(lreq);
+		return res.getFileNames();
 	}
 	
 

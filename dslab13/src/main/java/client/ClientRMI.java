@@ -1,5 +1,7 @@
 package client;
 
+import java.io.IOException;
+import java.io.Serializable;
 import java.net.MalformedURLException;
 import java.rmi.Naming;
 import java.rmi.NoSuchObjectException;
@@ -16,13 +18,13 @@ import cli.Command;
 import proxy.IProxyRMI;
 import util.Config;
 
-public class ClientRMI implements IClientRMI{
+public class ClientRMI extends UnicastRemoteObject implements IClientRMI{
 
 	private Config config;
 	private ClientCli client;
 	private IProxyRMI stub;
 	
-	public ClientRMI(ClientCli client){
+	public ClientRMI(ClientCli client) throws RemoteException{
 		this.config = new Config("mc");
 		this.client = client;
 		
@@ -56,11 +58,18 @@ public class ClientRMI implements IClientRMI{
 
 	@Override
 	@Command
-	public Response subscribe(String filename, int numberOfDownloads) throws RemoteException{
+	public Response subscribe(String filename, long numberOfDownloads) throws RemoteException{
 		if(!client.isLogin())
 			return new MessageResponse("You have to log in");
-		// TODO Auto-generated method stub
-		return null;
+		try {
+			if (!client.getListOfFiles().contains(filename)) 
+				return new MessageResponse("File does not exist");
+		} catch (IOException e) {
+			// TODO keine files vorhanden?
+			e.printStackTrace();
+		}
+		String username = client.getUsername();
+		return stub.subscribe(filename, numberOfDownloads, username, this);
 	}
 
 	@Override
@@ -75,6 +84,10 @@ public class ClientRMI implements IClientRMI{
 	public Response setUserPublicKey(String username) throws RemoteException{
 		// TODO Auto-generated method stub
 		return null;
+	}
+	
+	public Response notify(String filename, long numberOfDownloads) throws RemoteException{
+		return new MessageResponse("Notification: " + filename + " got downloaded " + numberOfDownloads + " times!");
 	}
 	
 	public void close(){

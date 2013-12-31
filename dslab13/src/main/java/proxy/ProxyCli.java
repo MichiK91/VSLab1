@@ -3,6 +3,7 @@ package proxy;
 import java.io.IOException;
 import java.net.SocketException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
@@ -16,6 +17,7 @@ import message.response.FileServerInfoResponse;
 import message.response.MessageResponse;
 import message.response.UserInfoResponse;
 import model.FileServerInfo;
+import model.Subscriber;
 import model.UserInfo;
 import util.Config;
 import cli.Command;
@@ -34,10 +36,11 @@ public class ProxyCli implements IProxyCli {
 	private ExecutorService threads = Executors.newCachedThreadPool();
 
 	private ResourceBundle bundle;
-	
+
 	private ProxyRMI rmi;
-	
+
 	private Map<String, Integer> downloadstats;
+	private List<Subscriber> subscribers;
 
 	public ProxyCli(Config config, Shell shell) throws SocketException {
 
@@ -58,11 +61,14 @@ public class ProxyCli implements IProxyCli {
 		setServerList();
 		this.c_accept = new ClientAccept(this.config, this);
 		this.threads.execute(this.c_accept);
-		
+
 		//start rmi
 		this.rmi = new ProxyRMI(this);
-		
-		this.downloadstats = new HashMap<String, Integer>();
+
+		this.downloadstats = Collections
+				.synchronizedMap(new HashMap<String, Integer>());
+		this.subscribers = Collections
+				.synchronizedList(new ArrayList<Subscriber>());
 
 	}
 
@@ -137,6 +143,46 @@ public class ProxyCli implements IProxyCli {
 		s_listener.changeServer(f);
 	}
 
+	// subscriber methods
+	public void addSubscriber(Subscriber s){
+		subscribers.add(s);
+		checkSubscriber(s.getFilename(), s.getNumberOfDownloads());
+	}
+
+	public void removeSubscriber(Subscriber s){
+		subscribers.remove(s);
+	}
+	
+	@Command
+	public Response test(){
+		String ret = "Subscribers";
+		boolean sub = false;
+		for(Subscriber s: subscribers){
+			sub =true;
+			ret += "\n" + s.getFilename() + " " + s.getNumberOfDownloads();
+		}
+		if(!sub){
+			ret += "\n" + "no subscribers found..";
+		}
+		return new MessageResponse(ret);
+	}
+
+	//checks if the numberofdownloads is reached
+	public void checkSubscriber(String filename, long numberOfDownloads){
+		synchronized(subscribers){
+			for(Subscriber s: subscribers){
+				if(s.getFilename().equals(filename)){
+					if(s.getNumberOfDownloads() <= numberOfDownloads){
+						s.notifyClient();
+						removeSubscriber(s);
+					}
+				}
+			}
+		}
+	}
+
+
+	// other methods
 	public FileServerInfo getOnlineServer() {
 		FileServerInfo server = new FileServerInfo(null, 0, 0, false);
 		long usage = Long.MAX_VALUE;
@@ -188,20 +234,21 @@ public class ProxyCli implements IProxyCli {
 		}
 
 	}
-	
+
+	//new download - update stats
 	public void updateStats(String filename){
 		if(downloadstats.containsKey(filename)){
 			Integer i = downloadstats.get(filename);
 			i++;
 			downloadstats.put(filename, i);
-			System.out.println("YEES " + i);
+			checkSubscriber(filename, i);
 		}
 		else{
 			downloadstats.put(filename, 1);
-			System.out.println("NO");
+			checkSubscriber(filename, 1);			
 		}
 	}
-	
+
 	public Map<String, Integer> getDownloadStats(){
 		return downloadstats;
 	}
