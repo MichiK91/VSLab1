@@ -96,6 +96,21 @@ public class ProxyCli implements IProxyCli {
 		return null;
 	}
 
+	//TODO delete this
+	@Command
+	public Response test(){
+		String ret = "Subscribers";
+		boolean sub = false;
+		for(Subscriber s: subscribers){
+			sub =true;
+			ret += "\n" + s.getFilename() + " " + s.getNumberOfDownloads();
+		}
+		if(!sub){
+			ret += "\n" + "no subscribers found..";
+		}
+		return new MessageResponse(ret);
+	}
+
 	// user methods
 	public void addUser(UserInfo user) {
 		users.add(user);
@@ -146,38 +161,37 @@ public class ProxyCli implements IProxyCli {
 	// subscriber methods
 	public void addSubscriber(Subscriber s){
 		subscribers.add(s);
-		checkSubscriber(s.getFilename(), s.getNumberOfDownloads());
+		long nod = 0;
+		if(downloadstats.containsKey(s.getFilename())){
+			nod = downloadstats.get(s.getFilename());
+		}
+		checkSubscriber(s.getFilename(), nod);
 	}
 
 	public void removeSubscriber(Subscriber s){
 		subscribers.remove(s);
-	}
+	}	
 	
-	@Command
-	public Response test(){
-		String ret = "Subscribers";
-		boolean sub = false;
-		for(Subscriber s: subscribers){
-			sub =true;
-			ret += "\n" + s.getFilename() + " " + s.getNumberOfDownloads();
-		}
-		if(!sub){
-			ret += "\n" + "no subscribers found..";
-		}
-		return new MessageResponse(ret);
-	}
-
 	//checks if the numberofdownloads is reached
 	public void checkSubscriber(String filename, long numberOfDownloads){
+		Subscriber sub = new Subscriber();
+		boolean found = false;
 		synchronized(subscribers){
 			for(Subscriber s: subscribers){
 				if(s.getFilename().equals(filename)){
 					if(s.getNumberOfDownloads() <= numberOfDownloads){
 						s.notifyClient();
-						removeSubscriber(s);
+						sub = s;
+						found = true;
+						break;
 					}
 				}
 			}
+		}
+		if(found){
+			removeSubscriber(sub);
+			found = false;
+			
 		}
 	}
 

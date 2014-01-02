@@ -1,8 +1,10 @@
 package proxy;
 
+import java.rmi.AccessException;
 import java.rmi.AlreadyBoundException;
 import java.rmi.Naming;
 import java.rmi.NoSuchObjectException;
+import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.rmi.registry.Registry;
@@ -27,11 +29,13 @@ import message.response.MessageResponse;
 import model.Subscriber;
 import cli.Command;
 import client.ClientRMI;
+import client.IClientRMI;
 
 public class ProxyRMI implements IProxyRMI{
 
 	private Config config;
 	private ProxyCli proxy;
+	private Registry registry;
 
 	public ProxyRMI(ProxyCli proxy){
 		this.config = new Config("mc");
@@ -41,9 +45,9 @@ public class ProxyRMI implements IProxyRMI{
 		try {
 			IProxyRMI stub = (IProxyRMI) UnicastRemoteObject.exportObject(this, 0);
 
-			Registry regestry = LocateRegistry.createRegistry(getProxyRMIPort());
+			registry = LocateRegistry.createRegistry(getProxyRMIPort());
 
-			regestry.bind(getBindingName(), stub);
+			registry.bind(getBindingName(), stub);
 
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -88,7 +92,7 @@ public class ProxyRMI implements IProxyRMI{
 	}
 
 	@Override
-	public Response subscribe(String filename, long numberOfDownloads, String username, ClientRMI callbackobject)
+	public Response subscribe(String filename, long numberOfDownloads, String username, IClientRMI callbackobject)
 			throws RemoteException {
 		proxy.addSubscriber(new Subscriber(filename, numberOfDownloads, callbackobject));
 		return new MessageResponse("Succesfully subscribed for file: " + filename);
@@ -108,11 +112,11 @@ public class ProxyRMI implements IProxyRMI{
 
 	public void close(){
 		try {
-			UnicastRemoteObject.unexportObject(this, true);
+			UnicastRemoteObject.unexportObject(this, false);
 		} catch (NoSuchObjectException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		}
+		} 
 	}
 
 	public String getBindingName(){

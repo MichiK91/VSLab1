@@ -17,10 +17,11 @@ public interface IProxyRMI extends Remote {
 	
 	public Response topThreeDownloads() throws RemoteException;
 	
-	public Response subscribe(String filename, long numberOfDownloads, String username, ClientRMI callbackobject) throws RemoteException;
+	public Response subscribe(String filename, long numberOfDownloads, String username, IClientRMI callbackobject) throws RemoteException;
 
 	public Response getProxyPublicKey() throws RemoteException;
 	
 	public Response setUserPublicKey(String username) throws RemoteException;
+
 
 }

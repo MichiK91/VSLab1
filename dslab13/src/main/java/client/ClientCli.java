@@ -222,5 +222,14 @@ public class ClientCli implements IClientCli {
 		return res.getFileNames();
 	}
 	
+	public void notify(String filename, long numberOfDownloads){
+		try {
+			shell.writeLine("Notification: " + filename + " got downloaded " + numberOfDownloads + " times!");
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
 
 }

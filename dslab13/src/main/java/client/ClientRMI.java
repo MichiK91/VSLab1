@@ -3,6 +3,7 @@ package client;
 import java.io.IOException;
 import java.io.Serializable;
 import java.net.MalformedURLException;
+import java.rmi.AccessException;
 import java.rmi.Naming;
 import java.rmi.NoSuchObjectException;
 import java.rmi.NotBoundException;
@@ -18,11 +19,16 @@ import cli.Command;
 import proxy.IProxyRMI;
 import util.Config;
 
-public class ClientRMI extends UnicastRemoteObject implements IClientRMI{
+public class ClientRMI extends UnicastRemoteObject implements IClientRMI, Serializable{
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 7673656587124207060L;
 	private Config config;
 	private ClientCli client;
 	private IProxyRMI stub;
+	private Registry registry;
 	
 	public ClientRMI(ClientCli client) throws RemoteException{
 		this.config = new Config("mc");
@@ -30,7 +36,7 @@ public class ClientRMI extends UnicastRemoteObject implements IClientRMI{
 		
 		//init
 		try {
-			Registry registry = LocateRegistry.getRegistry(getProxyHost(), getProxyRMIPort());
+			registry = LocateRegistry.getRegistry(getProxyHost(), getProxyRMIPort());
 			stub = (IProxyRMI) registry.lookup(getBindingName());
 		} catch (Exception e1) {
 			System.err.println("No proxy available.");
@@ -86,12 +92,24 @@ public class ClientRMI extends UnicastRemoteObject implements IClientRMI{
 		return null;
 	}
 	
-	public Response notify(String filename, long numberOfDownloads) throws RemoteException{
-		return new MessageResponse("Notification: " + filename + " got downloaded " + numberOfDownloads + " times!");
+	public void notify(String filename, long numberOfDownloads) throws RemoteException{
+		client.notify(filename,numberOfDownloads);
 	}
 	
 	public void close(){
-		//TODO ??
+		try {
+			registry.unbind(getBindingName());
+			UnicastRemoteObject.unexportObject(this, false);
+		} catch (AccessException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (RemoteException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (NotBoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 	
 	public String getBindingName(){

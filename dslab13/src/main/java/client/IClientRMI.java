@@ -1,11 +1,12 @@
 package client;
 
+import java.rmi.Remote;
 import java.rmi.RemoteException;
 
 import cli.Command;
 import message.Response;
 
-public interface IClientRMI {
+public interface IClientRMI extends Remote {
 	
 	@Command
 	public Response readQuorum() throws RemoteException;
@@ -25,5 +26,7 @@ public interface IClientRMI {
 	
 	@Command
 	public Response setUserPublicKey(String username) throws RemoteException;
+	
+	public void notify(String filename, long numberOfDownloads) throws RemoteException;
 	
 }

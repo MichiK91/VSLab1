@@ -3,14 +3,19 @@ package model;
 import java.rmi.RemoteException;
 
 import client.ClientRMI;
+import client.IClientRMI;
 
 public class Subscriber {
 	
-		private String filename;
+	private String filename;
 	private long numberOfDownloads;
-	private ClientRMI callbackobject;
+	private IClientRMI callbackobject;
 	
-	public Subscriber(String filename, long numberOfDownloads, ClientRMI callbackobject){
+	public Subscriber(){
+		
+	}
+	
+	public Subscriber(String filename, long numberOfDownloads, IClientRMI callbackobject){
 		this.callbackobject = callbackobject;
 		this.filename = filename;
 		this.numberOfDownloads = numberOfDownloads;
