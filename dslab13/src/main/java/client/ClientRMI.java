@@ -81,6 +81,7 @@ public class ClientRMI extends UnicastRemoteObject implements IClientRMI, Serial
 	@Command
 	public Response getProxyPublicKey() throws RemoteException{
 		PublicKey key = stub.getProxyPublicKey();
+		System.out.println(key);
 		return new MessageResponse("Successfully received public key of Proxy.");
 	}
 

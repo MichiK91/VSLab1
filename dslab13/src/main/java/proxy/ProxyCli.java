@@ -1,7 +1,10 @@
 package proxy;
 
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.net.SocketException;
+import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -11,6 +14,8 @@ import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+
+import org.bouncycastle.openssl.PEMReader;
 
 import message.Response;
 import message.response.FileServerInfoResponse;
@@ -70,6 +75,22 @@ public class ProxyCli implements IProxyCli {
 		this.subscribers = Collections
 				.synchronizedList(new ArrayList<Subscriber>());
 
+	}
+	
+	public PublicKey getConfigPublicKey(){
+		String path = config.getString("keys.dir");
+		PublicKey pkey = null;
+		try {
+			PEMReader in = new PEMReader(new FileReader(path +"/proxy.pub.pem"));
+			pkey = (PublicKey) in.readObject();
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return pkey;
 	}
 
 	@Override

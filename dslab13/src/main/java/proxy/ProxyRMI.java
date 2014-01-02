@@ -102,10 +102,7 @@ public class ProxyRMI implements IProxyRMI{
 
 	@Override
 	public PublicKey getProxyPublicKey() throws RemoteException {
-		// TODO Auto-generated method stub
-		//zugreifen auf den public key vom proxy
-		//den zurückgeben
-		return null;
+		return proxy.getConfigPublicKey();
 	}
 
 	@Override
