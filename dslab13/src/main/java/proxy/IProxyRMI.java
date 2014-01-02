@@ -2,6 +2,8 @@ package proxy;
 
 import java.rmi.Remote;
 import java.rmi.RemoteException;
+import java.security.PublicKey;
+import java.security.interfaces.RSAPublicKey;
 
 import cli.Command;
 import client.ClientRMI;
@@ -19,7 +21,7 @@ public interface IProxyRMI extends Remote {
 	
 	public Response subscribe(String filename, long numberOfDownloads, String username, IClientRMI callbackobject) throws RemoteException;
 
-	public Response getProxyPublicKey() throws RemoteException;
+	public PublicKey getProxyPublicKey() throws RemoteException;
 	
 	public Response setUserPublicKey(String username) throws RemoteException;
 

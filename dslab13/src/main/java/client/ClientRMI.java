@@ -11,6 +11,8 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
+import java.security.PublicKey;
+import java.security.interfaces.RSAPublicKey;
 
 import message.Response;
 import message.response.MessageResponse;
@@ -21,10 +23,7 @@ import util.Config;
 
 public class ClientRMI extends UnicastRemoteObject implements IClientRMI, Serializable{
 
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = 7673656587124207060L;
+	
 	private Config config;
 	private ClientCli client;
 	private IProxyRMI stub;
@@ -81,8 +80,8 @@ public class ClientRMI extends UnicastRemoteObject implements IClientRMI, Serial
 	@Override
 	@Command
 	public Response getProxyPublicKey() throws RemoteException{
-		// TODO Auto-generated method stub
-		return null;
+		PublicKey key = stub.getProxyPublicKey();
+		return new MessageResponse("Successfully received public key of Proxy.");
 	}
 
 	@Override
@@ -98,15 +97,8 @@ public class ClientRMI extends UnicastRemoteObject implements IClientRMI, Serial
 	
 	public void close(){
 		try {
-			registry.unbind(getBindingName());
 			UnicastRemoteObject.unexportObject(this, false);
-		} catch (AccessException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (RemoteException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (NotBoundException e) {
+		}  catch (RemoteException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}

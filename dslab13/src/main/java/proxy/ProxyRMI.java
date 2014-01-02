@@ -9,10 +9,12 @@ import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.rmi.registry.Registry;
 import java.rmi.registry.LocateRegistry;
+import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -68,7 +70,7 @@ public class ProxyRMI implements IProxyRMI{
 	@Override
 	public Response topThreeDownloads() throws RemoteException {
 		String ret = "Top Three Downloads";
-		Map<String, Integer> map = proxy.getDownloadStats();
+		Map<String, Integer> map = new HashMap<String, Integer>(proxy.getDownloadStats());
 		if(map.isEmpty()){
 			return new MessageResponse("No downloads yet");
 		}
@@ -99,8 +101,10 @@ public class ProxyRMI implements IProxyRMI{
 	}
 
 	@Override
-	public Response getProxyPublicKey() throws RemoteException {
+	public PublicKey getProxyPublicKey() throws RemoteException {
 		// TODO Auto-generated method stub
+		//zugreifen auf den public key vom proxy
+		//den zurückgeben
 		return null;
 	}
 
