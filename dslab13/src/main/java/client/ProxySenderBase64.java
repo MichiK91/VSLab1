@@ -1,8 +1,12 @@
 package client;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.ObjectOutput;
+import java.io.ObjectOutputStream;
 import java.security.SecureRandom;
 
+import message.MessageWrapper;
 import message.Request;
 import message.request.LoginRequest;
 import message.Response;
@@ -17,18 +21,35 @@ public class ProxySenderBase64 implements Sender {
   }
   
   @Override
-  public void send(Request req) throws IOException {
+  public void send(Object req) throws IOException {
     proxySender.connect();
     
-    if(req instanceof LoginRequest){
-      String username = ((LoginRequest)req).getUsername();
-      SecureRandom secureRandom = new SecureRandom(); 
-      final byte[] number = new byte[32]; 
-      secureRandom.nextBytes(number);
-      String clientChallenge = new String(secureRandom.generateSeed(32));
-      proxySender.strout.writeChars("!login " + username + " " + Base64.encode(clientChallenge.getBytes()));
+    if(req instanceof byte[]){
+      byte[] encodedBytes = Base64.encode((byte[])req);
+      proxySender.send(encodedBytes); 
     } else {
-      //TODO encode base64
+      ByteArrayOutputStream bos = new ByteArrayOutputStream();
+      ObjectOutput out = null;
+      try {
+        out = new ObjectOutputStream(bos);   
+        out.writeObject(req);
+        byte[] yourBytes = bos.toByteArray();
+        byte[] encodedBytes = Base64.encode(yourBytes);
+        proxySender.send(new MessageWrapper(encodedBytes));
+      } finally {
+        try {
+          if (out != null) {
+            out.close();
+          }
+        } catch (IOException ex) {
+          // ignore close exception
+        }
+        try {
+          bos.close();
+        } catch (IOException ex) {
+          // ignore close exception
+        }
+      }
       proxySender.send(req);
     }
   }
@@ -39,10 +60,15 @@ public class ProxySenderBase64 implements Sender {
   }
 
   @Override
-  public Response receive() {
-    Response res = proxySender.receive();
+  public Object receive() {
+    Object res = proxySender.receive();
     
-    //TODO decode Base64
+    if(res instanceof byte[]){
+      return Base64.decode((byte[])res);
+    } else if(res instanceof MessageWrapper){
+      byte[] encodedBytes = ((MessageWrapper) res).getContent();
+      return new MessageWrapper(Base64.decode(encodedBytes));
+    }
     return res;
   }
 

@@ -5,8 +5,11 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.UnknownHostException;
+import java.security.SecureRandom;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+
+import org.bouncycastle.util.encoders.Base64;
 
 import util.Config;
 import cli.Command;
@@ -24,7 +27,7 @@ public class ClientCli implements IClientCli {
 
 	// thread pool
 	private ExecutorService threads = Executors.newCachedThreadPool();
-	private ProxySenderTCP psender;	
+	private ProxySenderCrypt psender;	
 	private ServerSenderTCP ssender;
 	
 	private boolean login;
@@ -39,7 +42,7 @@ public class ClientCli implements IClientCli {
 		this.threads.execute(this.shell);
 
 		try {
-			psender = new ProxySenderTCP(config);
+			psender = new ProxySenderCrypt(new ProxySenderBase64(new ProxySenderTCP(config)));
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
@@ -53,14 +56,19 @@ public class ClientCli implements IClientCli {
 	@Command
 	public LoginResponse login(String username, String password)
 			throws IOException {
-		LoginRequest lreq = new LoginRequest(username,password);
-		ProxySenderBase64 proxySender = new ProxySenderBase64(psender);
-		proxySender.send(lreq);
-		LoginResponse lres = (LoginResponse) proxySender.receive();
-		if(lres.getType().equals(LoginResponse.Type.SUCCESS)){
+	  
+    SecureRandom secureRandom = new SecureRandom(); 
+    final byte[] number = new byte[32]; 
+    secureRandom.nextBytes(number);
+    String clientChallenge = new String(secureRandom.generateSeed(32));
+    
+    psender.send("!login " + username + " " + Base64.encode(clientChallenge.getBytes()));
+    Object lres = (LoginResponse) psender.receive();
+    
+		if(((LoginResponse) lres).getType().equals(LoginResponse.Type.SUCCESS)){
 			login = true;
 		}
-		return lres;
+		return (LoginResponse) lres;
 	}
 
 	@Override
@@ -68,7 +76,7 @@ public class ClientCli implements IClientCli {
 	public Response credits() throws IOException {
 		CreditsRequest creq = new CreditsRequest();
 		psender.send(creq);
-		Response res = psender.receive();
+		Response res = (Response) psender.receive();
 		return res;
 	}
 
@@ -77,7 +85,7 @@ public class ClientCli implements IClientCli {
 	public Response buy(long credits) throws IOException {
 		BuyRequest breq = new BuyRequest(credits);
 		psender.send(breq);
-    Response res = psender.receive();
+    Response res = (Response) psender.receive();
 		return res;
 	}
 
@@ -86,7 +94,7 @@ public class ClientCli implements IClientCli {
 	public Response list() throws IOException {
 		ListRequest lreq = new ListRequest();
 		psender.send(lreq);
-    Response res = psender.receive();
+    Response res = (Response) psender.receive();
 		return res;
 	}
 
@@ -95,7 +103,7 @@ public class ClientCli implements IClientCli {
 	public Response download(String filename) throws IOException {
 		DownloadTicketRequest dtreq = new DownloadTicketRequest(filename);
 		psender.send(dtreq);
-    Response res = psender.receive();
+    Response res = (Response) psender.receive();
 		DownloadTicketResponse dtres;
 		if(res instanceof DownloadTicketResponse){
 			dtres = (DownloadTicketResponse) res;
@@ -110,7 +118,7 @@ public class ClientCli implements IClientCli {
 		ssender = new ServerSenderTCP(dt.getAddress(), dt.getPort());
 		
 		psender.send(dfreq);
-    Response res1 = ssender.receive();
+    Response res1 = (Response) ssender.receive();
 
 		DownloadFileResponse dfres;
 		if(res1 instanceof DownloadFileResponse){

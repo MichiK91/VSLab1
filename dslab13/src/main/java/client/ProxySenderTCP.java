@@ -33,7 +33,7 @@ public class ProxySenderTCP implements Closeable, Sender {
 		strin = new ObjectInputStream(socket.getInputStream());
 	}
 
-	public void send(Request req) {
+	public void send(Object req) {
 		
 		// send request
 		try {
@@ -47,11 +47,12 @@ public class ProxySenderTCP implements Closeable, Sender {
 	}
 
   @Override
-  public Response receive() {
- // get response
-    Response res = null;
+  public Object receive() {
+  // get response
+    Object res = null;
     try {
-      res = (Response) strin.readObject();
+      res = strin.readObject();
+      
     } catch (ClassNotFoundException e) {
       e.printStackTrace();
     } catch (IOException e) {

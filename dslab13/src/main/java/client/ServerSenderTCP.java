@@ -31,7 +31,7 @@ public class ServerSenderTCP implements Closeable, Sender {
 		}
 	}
 	
-	public void send(Request req) throws IOException{
+	public void send(Object req) throws IOException{
 		connect();
 		//send request
 		strout = new ObjectOutputStream(socket.getOutputStream());
@@ -55,7 +55,7 @@ public class ServerSenderTCP implements Closeable, Sender {
 	}
 
   @Override
-  public Response receive() {
+  public Object receive() {
     // TODO Auto-generated method stub
     return null;
   }
