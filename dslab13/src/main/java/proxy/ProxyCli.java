@@ -15,8 +15,6 @@ import java.util.ResourceBundle;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import org.bouncycastle.openssl.PEMReader;
-
 import message.Response;
 import message.response.FileServerInfoResponse;
 import message.response.MessageResponse;
@@ -24,6 +22,9 @@ import message.response.UserInfoResponse;
 import model.FileServerInfo;
 import model.Subscriber;
 import model.UserInfo;
+
+import org.bouncycastle.openssl.PEMReader;
+
 import util.Config;
 import cli.Command;
 import cli.Shell;
@@ -67,21 +68,19 @@ public class ProxyCli implements IProxyCli {
 		this.c_accept = new ClientAccept(this.config, this);
 		this.threads.execute(this.c_accept);
 
-		//start rmi
+		// start rmi
 		this.rmi = new ProxyRMI(this);
 
-		this.downloadstats = Collections
-				.synchronizedMap(new HashMap<String, Integer>());
-		this.subscribers = Collections
-				.synchronizedList(new ArrayList<Subscriber>());
+		this.downloadstats = Collections.synchronizedMap(new HashMap<String, Integer>());
+		this.subscribers = Collections.synchronizedList(new ArrayList<Subscriber>());
 
 	}
-	
-	public PublicKey getConfigPublicKey(){
+
+	public PublicKey getConfigPublicKey() {
 		String path = config.getString("keys.dir");
 		PublicKey pkey = null;
 		try {
-			PEMReader in = new PEMReader(new FileReader(path +"/proxy.pub.pem"));
+			PEMReader in = new PEMReader(new FileReader(path + "/proxy.pub.pem"));
 			pkey = (PublicKey) in.readObject();
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
@@ -117,16 +116,16 @@ public class ProxyCli implements IProxyCli {
 		return null;
 	}
 
-	//TODO delete this
+	// TODO delete this
 	@Command
-	public Response test(){
+	public Response test() {
 		String ret = "Subscribers";
 		boolean sub = false;
-		for(Subscriber s: subscribers){
-			sub =true;
+		for (Subscriber s : subscribers) {
+			sub = true;
 			ret += "\n" + s.getFilename() + " " + s.getNumberOfDownloads();
 		}
-		if(!sub){
+		if (!sub) {
 			ret += "\n" + "no subscribers found..";
 		}
 		return new MessageResponse(ret);
@@ -180,27 +179,27 @@ public class ProxyCli implements IProxyCli {
 	}
 
 	// subscriber methods
-	public void addSubscriber(Subscriber s){
+	public void addSubscriber(Subscriber s) {
 		subscribers.add(s);
 		long nod = 0;
-		if(downloadstats.containsKey(s.getFilename())){
+		if (downloadstats.containsKey(s.getFilename())) {
 			nod = downloadstats.get(s.getFilename());
 		}
 		checkSubscriber(s.getFilename(), nod);
 	}
 
-	public void removeSubscriber(Subscriber s){
+	public void removeSubscriber(Subscriber s) {
 		subscribers.remove(s);
-	}	
-	
-	//checks if the numberofdownloads is reached
-	public void checkSubscriber(String filename, long numberOfDownloads){
+	}
+
+	// checks if the numberofdownloads is reached
+	public void checkSubscriber(String filename, long numberOfDownloads) {
 		Subscriber sub = new Subscriber();
 		boolean found = false;
-		synchronized(subscribers){
-			for(Subscriber s: subscribers){
-				if(s.getFilename().equals(filename)){
-					if(s.getNumberOfDownloads() <= numberOfDownloads){
+		synchronized (subscribers) {
+			for (Subscriber s : subscribers) {
+				if (s.getFilename().equals(filename)) {
+					if (s.getNumberOfDownloads() <= numberOfDownloads) {
 						s.notifyClient();
 						sub = s;
 						found = true;
@@ -209,13 +208,12 @@ public class ProxyCli implements IProxyCli {
 				}
 			}
 		}
-		if(found){
+		if (found) {
 			removeSubscriber(sub);
 			found = false;
-			
+
 		}
 	}
-
 
 	// other methods
 	public FileServerInfo getOnlineServer() {
@@ -249,8 +247,15 @@ public class ProxyCli implements IProxyCli {
 				onlineServer++;
 			}
 		}
-		double dd = (onlineServer / 2d);
-		return (int) Math.ceil(dd);
+		int ret = (int) Math.ceil(onlineServer / 2d);
+
+		if (onlineServer == 1) {
+			return 1;
+		} else if (onlineServer == 3) {
+			return 2;
+		} else {
+			return ret;
+		}
 	}
 
 	public int getWriteQuorum() {
@@ -264,27 +269,28 @@ public class ProxyCli implements IProxyCli {
 
 		if (onlineServer == 1) {
 			return 1;
+		} else if (onlineServer == 3) {
+			return 2;
 		} else {
 			return ret;
 		}
 
 	}
 
-	//new download - update stats
-	public void updateStats(String filename){
-		if(downloadstats.containsKey(filename)){
+	// new download - update stats
+	public void updateStats(String filename) {
+		if (downloadstats.containsKey(filename)) {
 			Integer i = downloadstats.get(filename);
 			i++;
 			downloadstats.put(filename, i);
 			checkSubscriber(filename, i);
-		}
-		else{
+		} else {
 			downloadstats.put(filename, 1);
-			checkSubscriber(filename, 1);			
+			checkSubscriber(filename, 1);
 		}
 	}
 
-	public Map<String, Integer> getDownloadStats(){
+	public Map<String, Integer> getDownloadStats() {
 		return downloadstats;
 	}
 
