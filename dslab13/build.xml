@@ -57,7 +57,49 @@
 			<arg value = "2"></arg>
 		</java>
 	</target>
+	
+	<target name="run-fileserver3" depends="compile" description="Run another fileserver.">
+		<java classname="your.Fileserver" fork="true" classpathref="project.classpath">
+			<arg value = "3"></arg>
+		</java>
+	</target>
 
+	<target name="run-fileserver4" depends="compile" description="Run another fileserver.">
+		<java classname="your.Fileserver" fork="true" classpathref="project.classpath">
+			<arg value = "4"></arg>
+		</java>
+	</target>
+	
+	<target name="run-fileserver5" depends="compile" description="Run another fileserver.">
+		<java classname="your.Fileserver" fork="true" classpathref="project.classpath">
+			<arg value = "5"></arg>
+		</java>
+	</target>
+	
+	<target name="run-fileserver6" depends="compile" description="Run another fileserver.">
+		<java classname="your.Fileserver" fork="true" classpathref="project.classpath">
+			<arg value = "6"></arg>
+		</java>
+	</target>
+	
+	<target name="run-fileserver7" depends="compile" description="Run another fileserver.">
+		<java classname="your.Fileserver" fork="true" classpathref="project.classpath">
+			<arg value = "7"></arg>
+		</java>
+	</target>
+	
+	<target name="run-fileserver8" depends="compile" description="Run another fileserver.">
+		<java classname="your.Fileserver" fork="true" classpathref="project.classpath">
+			<arg value = "8"></arg>
+		</java>
+	</target>
+	
+	<target name="run-fileserver9" depends="compile" description="Run another fileserver.">
+		<java classname="your.Fileserver" fork="true" classpathref="project.classpath">
+			<arg value = "9"></arg>
+		</java>
+	</target>
+	
 	<target name="run-client" depends="compile" description="Run client.">
 		<java classname="your.Client" fork="true" classpathref="project.classpath" />
 	</target>

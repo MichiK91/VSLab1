@@ -240,7 +240,8 @@ public class ProxyCli implements IProxyCli {
 		return false;
 	}
 
-	public int getReadQuroum() {
+	@Command
+	public int getReadQuorum() {
 		int onlineServer = 0;
 		for (FileServerInfo fsi : servers) {
 			if (fsi.isOnline()) {
@@ -258,6 +259,7 @@ public class ProxyCli implements IProxyCli {
 		}
 	}
 
+	@Command
 	public int getWriteQuorum() {
 		int onlineServer = 0;
 		for (FileServerInfo fsi : servers) {

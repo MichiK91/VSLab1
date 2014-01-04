@@ -36,9 +36,11 @@ public class FileServerImpl implements IFileServer, Closeable {
 		File file = new File(config.getString("fileserver.dir"));
 		File[] files = file.listFiles();
 
-		for (File f : files) {
-			if (f.isFile()) {
-				versionMap.put(f.getName(), 0);
+		if (files != null) {
+			for (File f : files) {
+				if (f.isFile()) {
+					versionMap.put(f.getName(), 0);
+				}
 			}
 		}
 	}

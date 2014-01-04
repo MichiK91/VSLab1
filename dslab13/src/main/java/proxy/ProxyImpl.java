@@ -5,9 +5,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import message.Response;
@@ -45,8 +43,6 @@ public class ProxyImpl implements IProxy, Closeable {
 	private ServerSenderTCP ss;
 	private int readQuorum = -1;
 	private int writeQuorum = -1;
-	
-	
 
 	public ProxyImpl(ProxyCli proxycli) {
 		this.userconfig = new Config("user");
@@ -162,7 +158,7 @@ public class ProxyImpl implements IProxy, Closeable {
 		int version = getLatestVersion(filename).getVersion();
 
 		if (readQuorum < 0) {
-			readQuorum = proxycli.getReadQuroum();
+			readQuorum = proxycli.getReadQuorum();
 		}
 
 		// get list of names
@@ -211,8 +207,8 @@ public class ProxyImpl implements IProxy, Closeable {
 
 					// create response
 					DownloadTicket dt = new DownloadTicket(user, filename, csum, server.getAddress(), server.getPort());
-					
-					//update statistics
+
+					// update statistics
 					proxycli.updateStats(filename);
 
 					return new DownloadTicketResponse(dt);
@@ -232,7 +228,7 @@ public class ProxyImpl implements IProxy, Closeable {
 			return new MessageResponse("No servers online, failed to upload the file");
 
 		if (readQuorum < 0) {
-			readQuorum = proxycli.getReadQuroum();
+			readQuorum = proxycli.getReadQuorum();
 		}
 
 		if (writeQuorum < 0) {
@@ -324,6 +320,8 @@ public class ProxyImpl implements IProxy, Closeable {
 				version = vs.getVersion();
 			}
 		}
+		System.out.println("Filename: " + name + " " + "Version: " + version);
+
 		return new VersionResponse(name, version);
 	}
 

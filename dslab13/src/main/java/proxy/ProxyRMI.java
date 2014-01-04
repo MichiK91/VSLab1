@@ -59,7 +59,7 @@ public class ProxyRMI implements IProxyRMI{
 
 	@Override
 	public Response readQuorum() throws RemoteException {
-		return new MessageResponse("Read-Quorom is set to " + proxy.getReadQuroum());
+		return new MessageResponse("Read-Quorom is set to " + proxy.getReadQuorum());
 	}
 
 	@Override
