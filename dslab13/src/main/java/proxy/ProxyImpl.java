@@ -166,7 +166,7 @@ public class ProxyImpl implements IProxy, Closeable {
 		// System.out.println("readQuorum: " + getLowest(readQuorum));
 		// System.out.println("after read");
 
-		for (FileServerInfo fsi : getLowest(readQuorum)) {
+		for (FileServerInfo fsi : getLowestUsage(readQuorum)) {
 
 			FileServerInfo server = fsi;
 			ss = new ServerSenderTCP(server.getAddress(), server.getPort());
@@ -236,7 +236,8 @@ public class ProxyImpl implements IProxy, Closeable {
 		}
 
 		ServerSenderTCP sstcp;
-		List<FileServerInfo> servers = getLowest(writeQuorum);
+		List<FileServerInfo> servers = getLowestUsage(writeQuorum);
+
 		request = new UploadRequest(request.getFilename(), getLatestVersion(request.getFilename()).getVersion() + 1, request.getContent());
 		MessageResponse ures = null;
 
@@ -285,7 +286,7 @@ public class ProxyImpl implements IProxy, Closeable {
 			ss.close();
 	}
 
-	private ArrayList<FileServerInfo> getLowest(int number) throws IOException {
+	private ArrayList<FileServerInfo> getLowestUsage(int number) throws IOException {
 		FileServerInfoResponse res = (FileServerInfoResponse) proxycli.fileservers();
 		List<FileServerInfo> list = res.getFileServerInfo();
 
@@ -314,13 +315,14 @@ public class ProxyImpl implements IProxy, Closeable {
 
 	private VersionResponse getLatestVersion(String name) throws IOException {
 		int version = 0;
-		for (FileServerInfo fsi : getLowest(readQuorum)) {
+		for (FileServerInfo fsi : getLowestUsage(readQuorum)) {
+			ss = new ServerSenderTCP(fsi.getAddress(), fsi.getPort());
 			VersionResponse vs = (VersionResponse) ss.send(new VersionRequest(name));
 			if (vs.getVersion() > version) {
 				version = vs.getVersion();
 			}
 		}
-		System.out.println("Filename: " + name + " " + "Version: " + version);
+		// System.out.println("GetVersion(): Filename: " + name + " " + "Version: " + version);
 
 		return new VersionResponse(name, version);
 	}

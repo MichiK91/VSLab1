@@ -127,8 +127,7 @@ public class FileServerImpl implements IFileServer, Closeable {
 				}
 			}
 		}
-		System.out.println(name);
-		System.out.println(version);
+
 		return new VersionResponse(name, version);
 	}
 
@@ -152,6 +151,7 @@ public class FileServerImpl implements IFileServer, Closeable {
 		out.write(request.getContent());
 		out.close();
 		versionMap.put(request.getFilename(), request.getVersion());
+		//System.out.println("Name: " + request.getFilename() + " Version " + request.getVersion());
 		return new MessageResponse("successfully uploaded");
 	}
 
