@@ -13,13 +13,13 @@ public class ClientAccept implements Runnable{
 	private ExecutorService threads;
 	private ServerSocket s;
 	private ProxyCli proxycli;
-	private ClientListenerTCP cl;
+	private ClientListenerCrypt cl;
 	
-	private ArrayList<ClientListenerTCP> list;
+	private ArrayList<ClientListenerCrypt> list;
 	
 	public ClientAccept(Config config, ProxyCli proxycli){
 		this.proxycli = proxycli;
-		this.list = new ArrayList<ClientListenerTCP>();
+		this.list = new ArrayList<ClientListenerCrypt>();
 		try {
 			this.s = new ServerSocket(config.getInt("tcp.port"));
 		} catch (IOException e) {
@@ -32,9 +32,9 @@ public class ClientAccept implements Runnable{
 		 
 		while(true){
 			try {
-				cl = new ClientListenerTCP(s.accept(),proxycli);
+				cl = new ClientListenerCrypt(new ClientListenerBase64(new ClientListenerTCP(s.accept(),proxycli)));
 				list.add(cl);
-				threads.execute(cl);
+				threads.execute(cl.getListener().getListener());
 			} catch (Exception e) {
 				//socket closed - no clients till now
 				System.out.println("Proxy shuts down. No further clients are allowed.");
@@ -45,9 +45,9 @@ public class ClientAccept implements Runnable{
 	}
 	
 	public void close() throws IOException{
-		for(ClientListenerTCP c : list){
+		for(ClientListenerCrypt c : list){
 			if(c != null)
-				c.close();
+				c.getListener().getListener().close();
 		}
 		threads.shutdownNow();
 		s.close();

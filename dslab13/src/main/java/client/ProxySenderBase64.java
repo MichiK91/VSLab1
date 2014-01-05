@@ -27,30 +27,12 @@ public class ProxySenderBase64 implements Sender {
     if(req instanceof byte[]){
       byte[] encodedBytes = Base64.encode((byte[])req);
       proxySender.send(encodedBytes); 
-    } else {
-      ByteArrayOutputStream bos = new ByteArrayOutputStream();
-      ObjectOutput out = null;
-      try {
-        out = new ObjectOutputStream(bos);   
-        out.writeObject(req);
-        byte[] yourBytes = bos.toByteArray();
-        byte[] encodedBytes = Base64.encode(yourBytes);
-        proxySender.send(new MessageWrapper(encodedBytes));
-      } finally {
-        try {
-          if (out != null) {
-            out.close();
-          }
-        } catch (IOException ex) {
-          // ignore close exception
-        }
-        try {
-          bos.close();
-        } catch (IOException ex) {
-          // ignore close exception
-        }
-      }
-      proxySender.send(req);
+    } else if (req instanceof MessageWrapper){
+
+      byte[] yourBytes = ((MessageWrapper) req).getContent();
+      byte[] encodedBytes = Base64.encode(yourBytes);
+      proxySender.send(new MessageWrapper(encodedBytes));
+      
     }
   }
 

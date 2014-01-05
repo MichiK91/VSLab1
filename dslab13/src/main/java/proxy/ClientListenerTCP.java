@@ -18,7 +18,7 @@ import message.request.LogoutRequest;
 import message.request.UploadRequest;
 
 
-public class ClientListenerTCP implements Runnable, Closeable {
+public class ClientListenerTCP implements Runnable, Closeable, Listener {
 
 	private Socket csocket;
 	private ObjectInputStream strin;
@@ -52,12 +52,16 @@ public class ClientListenerTCP implements Runnable, Closeable {
 			// recieve object
 			try {
 				Object o = strin.readObject();
+				this.listen(o);
+				
+				
 				Request req = null;
 				if (o instanceof Request) {
 					req = (Request) o;
 					System.out.println(req);
 				}
-
+        
+				
 				// execute object
 				Response res = sendRequestToProxy(req);
 
@@ -104,5 +108,27 @@ public class ClientListenerTCP implements Runnable, Closeable {
 		strin.close();
 		csocket.close();
 	}
+
+  @Override
+  public void listen(Object req) throws IOException {
+    // TODO Auto-generated method stub
+    
+  }
+
+  @Override
+  public Object receive() {
+    try {
+      Object o = strin.readObject();
+      return o;
+    } catch (ClassNotFoundException | IOException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }
+    return null;
+  }
+  
+  public ObjectInputStream getInputStream(){
+    return this.strin;
+  }
 
 }

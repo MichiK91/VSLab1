@@ -18,6 +18,7 @@ import message.MessageWrapper;
 import message.Request;
 import message.Response;
 import message.request.LoginRequest;
+import message.response.LoginResponse;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -40,16 +41,16 @@ public class ProxySenderCrypt implements Sender {
   PublicKey publicKey;
   PrivateKey privateKey;
   SecretKey AESKey;
+  byte[] ivParameter;
   
   public ProxySenderCrypt(ProxySenderBase64 proxySender){
     this.proxySender = proxySender;
     Config config = new Config("client");
-    config.getString("keys.dir");
     String pathToPublicKey = config.getString("proxy.key");
     PEMReader pemReader;
     try {
       pemReader = new PEMReader(new FileReader(pathToPublicKey));
-      PublicKey publicKey = (PublicKey) pemReader.readObject();
+      publicKey = (PublicKey) pemReader.readObject();
     } catch (FileNotFoundException e) {
       // TODO Auto-generated catch block
       e.printStackTrace();
@@ -69,10 +70,10 @@ public class ProxySenderCrypt implements Sender {
       try {
         
         Config config = new Config("client");
-        config.getString("keys.dir");
+        String keysDir = config.getString("keys.dir");
         String[] parts = ((String)req).split(" ");
         if(parts.length>1){
-          String pathToPrivateKey = config.getString("keys.dir/"+parts[1]);
+          String pathToPrivateKey = config.getString(keysDir+"/"+parts[1]+".pem");
           PEMReader pemReader;
           try {
             pemReader = new PEMReader(new FileReader(pathToPrivateKey));
@@ -86,13 +87,13 @@ public class ProxySenderCrypt implements Sender {
           }
           
           cryptCipher = Cipher.getInstance("RSA/NONE/OAEPWithSHA256AndMGF1Padding");
-          cryptCipher.init(Cipher.ENCRYPT_MODE, AESKey);
+          cryptCipher.init(Cipher.ENCRYPT_MODE, publicKey);
           
           byte[] encryptReq = cryptCipher.doFinal(((String)req).getBytes());
           proxySender.send(encryptReq);
         } else {
           cryptCipher = Cipher.getInstance("AES/CTR/NoPadding");
-          cryptCipher.init(Cipher.ENCRYPT_MODE, publicKey); //TODO iv-parameter
+          cryptCipher.init(Cipher.ENCRYPT_MODE, AESKey); //TODO iv-parameter
           byte[] encryptReq = cryptCipher.doFinal(((String)req).getBytes());
           proxySender.send(encryptReq);
         }
@@ -126,13 +127,9 @@ public class ProxySenderCrypt implements Sender {
         cryptCipher.init(Cipher.ENCRYPT_MODE, AESKey);
         byte[] encryptReq = cryptCipher.doFinal(yourBytesReq);
         
-        ByteArrayInputStream bis = new ByteArrayInputStream(encryptReq);
-        
-        ObjectInput in = null;
-        in = new ObjectInputStream(bis);
-        Request o = (Request) in.readObject(); 
+         
 
-        proxySender.send(o);
+        proxySender.send(new MessageWrapper(encryptReq));
           
         } catch (NoSuchAlgorithmException e) {
           // TODO Auto-generated catch block
@@ -149,12 +146,8 @@ public class ProxySenderCrypt implements Sender {
         } catch (BadPaddingException e) {
           // TODO Auto-generated catch block
           e.printStackTrace();
-        } catch (ClassNotFoundException e) {
-          // TODO Auto-generated catch block
-          e.printStackTrace();
         }
       } 
-    
   }
 
   @Override
@@ -175,15 +168,16 @@ public class ProxySenderCrypt implements Sender {
         byte[] decryptReq = cryptCipher.doFinal((byte[])req);
         String answer = new String(decryptReq);
         String[] answerSplit = answer.split(" ");
-        if(Base64.decode(answerSplit[0].getBytes()).equals("!ok")){
+        if(answerSplit[0].getBytes().equals("!ok")){
           try {
             this.send(answerSplit[2]);
+            return new LoginResponse(LoginResponse.Type.SUCCESS);
           } catch (IOException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
           }
         }
-      } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException | Base64DecodingException e) {
+      } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException e) {
         // TODO Auto-generated catch block
         e.printStackTrace();
       }
@@ -196,12 +190,40 @@ public class ProxySenderCrypt implements Sender {
         cryptCipher.init(Cipher.DECRYPT_MODE, privateKey);
         
         byte[] decryptReq = cryptCipher.doFinal(((MessageWrapper)req).getContent());
+        ByteArrayInputStream bis = new ByteArrayInputStream(decryptReq);
+        ObjectInput in = null;
+        try {
+          in = new ObjectInputStream(bis);
+          Object o = in.readObject(); 
+          if(o instanceof Response){
+            return o;
+          }
+        } catch (IOException e) {
+          // TODO Auto-generated catch block
+          e.printStackTrace();
+        } catch (ClassNotFoundException e) {
+          // TODO Auto-generated catch block
+          e.printStackTrace();
+        } finally {
+          try {
+            bis.close();
+          } catch (IOException ex) {
+            // ignore close exception
+          }
+          try {
+            if (in != null) {
+              in.close();
+            }
+          } catch (IOException ex) {
+            // ignore close exception
+          }
+        }
         return new MessageWrapper(decryptReq);
       } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException e) {
         e.printStackTrace();
       }
     }
-    return req;
+    return new LoginResponse(LoginResponse.Type.WRONG_CREDENTIALS);
   }
 
 }
