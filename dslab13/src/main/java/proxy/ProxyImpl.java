@@ -41,8 +41,8 @@ public class ProxyImpl implements IProxy, Closeable {
 	private boolean loggedin;
 	private ProxyCli proxycli;
 	private ServerSenderTCP ss;
-	int readQuorum = 2;
-	int writeQuorum = 2;
+	private int readQuorum = -1;
+	private int writeQuorum = -1;
 
 	public ProxyImpl(ProxyCli proxycli) {
 		this.userconfig = new Config("user");
@@ -154,47 +154,68 @@ public class ProxyImpl implements IProxy, Closeable {
 			return new MessageResponse("No servers online");
 		}
 
+		// get latest Version
+		int version = getLatestVersion(filename).getVersion();
+
+		if (readQuorum < 0) {
+			readQuorum = proxycli.getReadQuorum();
+		}
+
 		// get list of names
-		FileServerInfo server = proxycli.getOnlineServer();
-		ss = new ServerSenderTCP(server.getAddress(), server.getPort());
-		ListResponse lres = (ListResponse) ss.send(new ListRequest());
-		Set<String> names = null;
-		try {
-			names = lres.getFileNames();
-		} catch (Exception e) {
-			// server has gone offline in meantime
-			// sent to fast
-			return null;
-		}
-		if (!names.contains(filename)) {
-			return new MessageResponse("Invalid file name");
-		}
+		// System.out.println("asdf");
+		// System.out.println("readQuorum: " + getLowest(readQuorum));
+		// System.out.println("after read");
 
-		// check credits and reduce them
-		InfoResponse ires = (InfoResponse) ss.send(new InfoRequest(filename));
-		if (ires.getSize() > creditscount) {
-			return new MessageResponse("Not enough credits available");
-		} else {
-			creditscount -= ires.getSize();
-			// increase usage
-			proxycli.changeServer(new FileServerInfo(server.getAddress(), server.getPort(), server.getUsage() + ires.getSize(), true));
+		for (FileServerInfo fsi : getLowestUsage(readQuorum)) {
 
-			for (UserInfo u : proxycli.getUserList()) {
-				if (u.getName().equals(user)) {
-					proxycli.removeUser(u);
-					proxycli.addUser(new UserInfo(user, creditscount, true));
-					break;
+			FileServerInfo server = fsi;
+			ss = new ServerSenderTCP(server.getAddress(), server.getPort());
+			ListResponse lres = (ListResponse) ss.send(new ListRequest());
+			Set<String> names = null;
+			try {
+				names = lres.getFileNames();
+			} catch (Exception e) {
+				// server has gone offline in meantime
+				// sent to fast
+				return null;
+			}
+			if (!names.contains(filename)) {
+				return new MessageResponse("Invalid file name");
+			} else {
+				VersionResponse vRes = (VersionResponse) ss.send(new VersionRequest(filename));
+				if (version == vRes.getVersion()) {
+					// check credits and reduce them
+					InfoResponse ires = (InfoResponse) ss.send(new InfoRequest(filename));
+					if (ires.getSize() > creditscount) {
+						return new MessageResponse("Not enough credits available");
+					} else {
+						creditscount -= ires.getSize();
+						// increase usage
+						proxycli.changeServer(new FileServerInfo(server.getAddress(), server.getPort(), server.getUsage() + ires.getSize(), true));
+
+						for (UserInfo u : proxycli.getUserList()) {
+							if (u.getName().equals(user)) {
+								proxycli.removeUser(u);
+								proxycli.addUser(new UserInfo(user, creditscount, true));
+								break;
+							}
+						}
+					}
+
+					VersionResponse vres = (VersionResponse) ss.send(new VersionRequest(filename));
+					String csum = ChecksumUtils.generateChecksum(user, filename, vres.getVersion(), ires.getSize());
+
+					// create response
+					DownloadTicket dt = new DownloadTicket(user, filename, csum, server.getAddress(), server.getPort());
+
+					// update statistics
+					proxycli.updateStats(filename);
+
+					return new DownloadTicketResponse(dt);
 				}
 			}
 		}
-
-		VersionResponse vres = (VersionResponse) ss.send(new VersionRequest(filename));
-		String csum = ChecksumUtils.generateChecksum(user, filename, vres.getVersion(), ires.getSize());
-
-		// create response
-		DownloadTicket dt = new DownloadTicket(user, filename, csum, server.getAddress(), server.getPort());
-
-		return new DownloadTicketResponse(dt);
+		return null;
 	}
 
 	@Override
@@ -206,13 +227,21 @@ public class ProxyImpl implements IProxy, Closeable {
 		if (!proxycli.checkOnline())
 			return new MessageResponse("No servers online, failed to upload the file");
 
+		if (readQuorum < 0) {
+			readQuorum = proxycli.getReadQuorum();
+		}
+
+		if (writeQuorum < 0) {
+			writeQuorum = proxycli.getWriteQuorum();
+		}
+
 		ServerSenderTCP sstcp;
-		List<FileServerInfo> servers = getLowest(writeQuorum);
-		request = new UploadRequest(request.getFilename(), getLatestVersion(request.getFilename()), request.getContent());
+		List<FileServerInfo> servers = getLowestUsage(writeQuorum);
+
+		request = new UploadRequest(request.getFilename(), getLatestVersion(request.getFilename()).getVersion() + 1, request.getContent());
 		MessageResponse ures = null;
 
 		for (FileServerInfo fs : servers) {
-			// TODO Stage1
 			// get all servers, which are online and send each of them a
 			// uploadrequest
 			if (fs.isOnline()) {
@@ -257,7 +286,7 @@ public class ProxyImpl implements IProxy, Closeable {
 			ss.close();
 	}
 
-	private ArrayList<FileServerInfo> getLowest(int number) throws IOException {
+	private ArrayList<FileServerInfo> getLowestUsage(int number) throws IOException {
 		FileServerInfoResponse res = (FileServerInfoResponse) proxycli.fileservers();
 		List<FileServerInfo> list = res.getFileServerInfo();
 
@@ -284,15 +313,18 @@ public class ProxyImpl implements IProxy, Closeable {
 		return returnList;
 	}
 
-	private int getLatestVersion(String name) throws IOException {
+	private VersionResponse getLatestVersion(String name) throws IOException {
 		int version = 0;
-		for (FileServerInfo fsi : getLowest(readQuorum)) {
+		for (FileServerInfo fsi : getLowestUsage(readQuorum)) {
+			ss = new ServerSenderTCP(fsi.getAddress(), fsi.getPort());
 			VersionResponse vs = (VersionResponse) ss.send(new VersionRequest(name));
 			if (vs.getVersion() > version) {
 				version = vs.getVersion();
 			}
 		}
-		return ++version;
+		// System.out.println("GetVersion(): Filename: " + name + " " + "Version: " + version);
+
+		return new VersionResponse(name, version);
 	}
 
 }

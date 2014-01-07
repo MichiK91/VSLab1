@@ -8,7 +8,12 @@ import java.io.IOException;
 import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
 import java.net.UnknownHostException;
+
 import java.security.SecureRandom;
+
+import java.util.List;
+import java.util.Set;
+
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -34,11 +39,16 @@ public class ClientCli implements IClientCli {
 	private ServerSenderTCP ssender;
 	
 	private boolean login;
+	
+	private ClientRMI rmi;
+	
+	private String username;
 
 	public ClientCli(Config config, Shell shell) throws IOException {
 		this.config = config;
 		this.shell = shell;
 		this.login = false;
+		this.username = "";
 
 		// register the shell
 		this.shell.register(this);
@@ -51,6 +61,10 @@ public class ClientCli implements IClientCli {
 			System.err.println("No proxy available. Please press enter to exit.");			
 			exit();
 		}
+		
+		//start RMI
+		rmi = new ClientRMI(this);
+		this.shell.register(rmi);
 
 	}
 
@@ -69,9 +83,7 @@ public class ClientCli implements IClientCli {
         return (LoginResponse) lres;
       }
       return new LoginResponse(LoginResponse.Type.WRONG_CREDENTIALS);
-           
-          
-	}
+  }
 
 	@Override
 	@Command
@@ -199,12 +211,15 @@ public class ClientCli implements IClientCli {
 		psender.send(lreq);
 		MessageResponse mres = (MessageResponse) psender.receive();
 		login = false;
+		this.username = "";
 		return mres;
 	}
 
 	@Override
 	@Command
 	public MessageResponse exit() throws IOException {
+		if(rmi != null)
+			rmi.close();
 		if(login)
 			logout();
 		if(psender != null)
@@ -213,5 +228,30 @@ public class ClientCli implements IClientCli {
 		shell.close();
 		return null;
 	}
+	
+	public boolean isLogin() {
+		return this.login;
+	}
+	
+	public String getUsername(){
+		return this.username;
+	}
+	
+	public Set<String> getListOfFiles() throws IOException {
+		ListRequest lreq = new ListRequest();
+		psender.send(lreq);
+		ListResponse res = (ListResponse) psender.receive();
+		return res.getFileNames();
+	}
+	
+	public void notify(String filename, long numberOfDownloads){
+		try {
+			shell.writeLine("Notification: " + filename + " got downloaded " + numberOfDownloads + " times!");
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
 
 }

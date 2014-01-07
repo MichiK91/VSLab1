@@ -33,6 +33,16 @@ public class FileServerImpl implements IFileServer, Closeable {
 		this.sender = new ProxySenderUDP(this.config);
 		versionMap = new HashMap<String, Integer>();
 
+		File file = new File(config.getString("fileserver.dir"));
+		File[] files = file.listFiles();
+
+		if (files != null) {
+			for (File f : files) {
+				if (f.isFile()) {
+					versionMap.put(f.getName(), 0);
+				}
+			}
+		}
 	}
 
 	@Override
@@ -117,6 +127,7 @@ public class FileServerImpl implements IFileServer, Closeable {
 				}
 			}
 		}
+
 		return new VersionResponse(name, version);
 	}
 
@@ -140,6 +151,7 @@ public class FileServerImpl implements IFileServer, Closeable {
 		out.write(request.getContent());
 		out.close();
 		versionMap.put(request.getFilename(), request.getVersion());
+		//System.out.println("Name: " + request.getFilename() + " Version " + request.getVersion());
 		return new MessageResponse("successfully uploaded");
 	}
 

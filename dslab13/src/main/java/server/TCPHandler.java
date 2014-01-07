@@ -9,8 +9,14 @@ import java.net.Socket;
 
 import message.Request;
 import message.Response;
-import message.request.*;
-import message.response.*;
+import message.request.DownloadFileRequest;
+import message.request.InfoRequest;
+import message.request.ListRequest;
+import message.request.UploadRequest;
+import message.request.VersionRequest;
+import message.response.InfoResponse;
+import message.response.ListResponse;
+import message.response.VersionResponse;
 import util.Config;
 
 public class TCPHandler implements Runnable, Closeable {
@@ -54,12 +60,12 @@ public class TCPHandler implements Runnable, Closeable {
 				strin.close();
 				csocket.close();
 				ssocket.close();
-				
+
 			} catch (IOException e) {
 				System.out.println("FileServer shuts down. No further downloads are allowed.");
 				break;
-			} catch (ClassNotFoundException e) {
-				e.printStackTrace();
+			} catch (ClassNotFoundException e1) {
+				e1.printStackTrace();
 			}
 		}
 
@@ -70,12 +76,10 @@ public class TCPHandler implements Runnable, Closeable {
 			ListResponse lres = (ListResponse) fileserver.list();
 			return lres;
 		} else if (req.getClass().equals(InfoRequest.class)) {
-			InfoResponse ires = (InfoResponse) fileserver
-					.info((InfoRequest) req);
+			InfoResponse ires = (InfoResponse) fileserver.info((InfoRequest) req);
 			return ires;
 		} else if (req.getClass().equals(VersionRequest.class)) {
-			VersionResponse vres = (VersionResponse) fileserver
-					.version((VersionRequest) req);
+			VersionResponse vres = (VersionResponse) fileserver.version((VersionRequest) req);
 			return vres;
 		} else if (req.getClass().equals(DownloadFileRequest.class)) {
 			Response dres = fileserver.download((DownloadFileRequest) req);
@@ -89,7 +93,7 @@ public class TCPHandler implements Runnable, Closeable {
 
 	@Override
 	public void close() throws IOException {
-		if(ssocket != null)
+		if (ssocket != null)
 			ssocket.close();
 		fileserver.close();
 	}
