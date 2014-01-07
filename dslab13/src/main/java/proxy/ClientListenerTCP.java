@@ -55,7 +55,10 @@ public class ClientListenerTCP implements Closeable, Listener {
     try {
       Object o = strin.readObject();
       return o;
-    } catch (ClassNotFoundException | IOException e) {
+    } catch (ClassNotFoundException e)  {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }catch (IOException e)  {
       // TODO Auto-generated catch block
       e.printStackTrace();
     }

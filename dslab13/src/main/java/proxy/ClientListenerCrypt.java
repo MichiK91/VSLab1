@@ -62,11 +62,73 @@ public class ClientListenerCrypt implements Runnable, Closeable, Listener{
   private ProxyCli proxycli;
   private ProxyImpl proxy;
   
+  
+  public static void main(String[] args){
+   
+        
+        
+        Cipher crypt;
+        try {
+          crypt = Cipher.getInstance("AES/CTR/NoPadding");
+          SecureRandom secure = new SecureRandom();
+          byte[] iv = secure.generateSeed(16);
+          
+          secure.nextBytes(new byte[16]);
+
+          
+          
+          final byte[] number = new byte[16]; 
+          secure.nextBytes(number);
+          
+          KeyGenerator generator = KeyGenerator.getInstance("AES"); 
+          
+          int keysize = 256;
+          generator.init(keysize); 
+          SecretKey aeSKey = generator.generateKey();
+          
+          String michi = "michi";
+          byte[] bytes = michi.getBytes();
+          
+          crypt.init(Cipher.ENCRYPT_MODE, aeSKey, new SecureRandom(iv));
+          byte[] encrypted = crypt.doFinal(bytes);
+          crypt.init(Cipher.DECRYPT_MODE, aeSKey);
+          byte[] decrypted = crypt.doFinal(encrypted);
+          System.out.print(new String(decrypted));
+        } catch (NoSuchAlgorithmException e) {
+          // TODO Auto-generated catch block
+          e.printStackTrace();
+        } catch (NoSuchPaddingException e) {
+          // TODO Auto-generated catch block
+          e.printStackTrace();
+        } catch (InvalidKeyException e) {
+          // TODO Auto-generated catch block
+          e.printStackTrace();
+        } catch (IllegalBlockSizeException e) {
+          // TODO Auto-generated catch block
+          e.printStackTrace();
+        } catch (BadPaddingException e) {
+          // TODO Auto-generated catch block
+          e.printStackTrace();
+        }
+        
+        
+      
+    }
+
   public ClientListenerCrypt(ClientListenerBase64 clientListenerBase64, ProxyCli proxycli, PrivateKey privateKey){
     this.clientListenerBase64 = clientListenerBase64;
     this.proxycli = proxycli;
     proxy = new ProxyImpl(this.proxycli);
     this.privateKey = privateKey;
+    
+    
+   
+    
+    
+    
+    
+    
+    
   }
   
   @Override
@@ -93,7 +155,7 @@ public class ClientListenerCrypt implements Runnable, Closeable, Listener{
   public void listen(Object req) throws IOException {
     Cipher cryptCipher;
     if (req instanceof Response){
-      try {
+      try{
         cryptCipher = Cipher.getInstance("AES/CTR/NoPadding");
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         ObjectOutput out = null;
@@ -105,7 +167,19 @@ public class ClientListenerCrypt implements Runnable, Closeable, Listener{
         cryptCipher.init(Cipher.ENCRYPT_MODE, AESKey, new SecureRandom(ivParameter));
         byte[] encryptReq = cryptCipher.doFinal(yourBytesReq);
         clientListenerBase64.listen(new MessageWrapper(encryptReq, true));
-      } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException e) {
+      } catch (NoSuchAlgorithmException e) {
+        // TODO Auto-generated catch block
+        e.printStackTrace();
+      } catch (NoSuchPaddingException e) {
+        // TODO Auto-generated catch block
+        e.printStackTrace();
+      } catch (InvalidKeyException e) {
+        // TODO Auto-generated catch block
+        e.printStackTrace();
+      } catch (IllegalBlockSizeException e) {
+        // TODO Auto-generated catch block
+        e.printStackTrace();
+      } catch (BadPaddingException e) {
         // TODO Auto-generated catch block
         e.printStackTrace();
       }
@@ -120,10 +194,22 @@ public class ClientListenerCrypt implements Runnable, Closeable, Listener{
         byte[] encryptReq = cryptCipher.doFinal(((String)req).getBytes());
         clientListenerBase64.listen(encryptReq);
         
-      } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException e) {
+      }  catch (NoSuchAlgorithmException e) {
         // TODO Auto-generated catch block
         e.printStackTrace();
-      } 
+      } catch (NoSuchPaddingException e) {
+        // TODO Auto-generated catch block
+        e.printStackTrace();
+      } catch (InvalidKeyException e) {
+        // TODO Auto-generated catch block
+        e.printStackTrace();
+      } catch (IllegalBlockSizeException e) {
+        // TODO Auto-generated catch block
+        e.printStackTrace();
+      } catch (BadPaddingException e) {
+        // TODO Auto-generated catch block
+        e.printStackTrace();
+      }
       
     }
   }
@@ -180,7 +266,19 @@ public class ClientListenerCrypt implements Runnable, Closeable, Listener{
             e.printStackTrace();
           }
         }
-      } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException e) {
+      } catch (NoSuchAlgorithmException e) {
+        // TODO Auto-generated catch block
+        e.printStackTrace();
+      } catch (NoSuchPaddingException e) {
+        // TODO Auto-generated catch block
+        e.printStackTrace();
+      } catch (InvalidKeyException e) {
+        // TODO Auto-generated catch block
+        e.printStackTrace();
+      } catch (IllegalBlockSizeException e) {
+        // TODO Auto-generated catch block
+        e.printStackTrace();
+      } catch (BadPaddingException e) {
         // TODO Auto-generated catch block
         e.printStackTrace();
       }
@@ -195,9 +293,12 @@ public class ClientListenerCrypt implements Runnable, Closeable, Listener{
         SecureRandom secure = new SecureRandom(ivParameter);
         secure.nextBytes(new byte[16]);
         cryptCipher.init(Cipher.DECRYPT_MODE, AESKey, new IvParameterSpec(ivParameter), secure);
-        System.out.println("dAES: ");
+
         byte[] decryptReq = cryptCipher.doFinal(((MessageWrapper) o).getContent());
-        System.out.println("AES: "+decryptReq+" "+((MessageWrapper) o).isMessage());
+        System.out.println("AES: "+new String(decryptReq)+" "+((MessageWrapper) o).isMessage());
+        cryptCipher.init(Cipher.ENCRYPT_MODE, AESKey, secure);
+        System.out.println("gegenprobe: "+new String(cryptCipher.doFinal(decryptReq))+" "+((MessageWrapper) o).isMessage());
+        
         if(((MessageWrapper) o).isMessage()){
           System.out.println("generate request out of byte[]");
           if(connected){
@@ -208,9 +309,13 @@ public class ClientListenerCrypt implements Runnable, Closeable, Listener{
               in = new ObjectInputStream(bis);
               Object req = in.readObject(); 
               return req;
-            } catch (IOException | ClassNotFoundException e) {
+            } catch (IOException e) {
+              // TODO Auto-generated catch block
               e.printStackTrace();
-            } finally {
+            } catch (ClassNotFoundException e) {
+              // TODO Auto-generated catch block
+              e.printStackTrace();
+            }finally {
               try {
                 bis.close();
               } catch (IOException ex) {}
@@ -231,8 +336,24 @@ public class ClientListenerCrypt implements Runnable, Closeable, Listener{
           }
 
         }
-      } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException | InvalidAlgorithmParameterException e) {
+      } catch (NoSuchAlgorithmException e) {
+        // TODO Auto-generated catch block
         e.printStackTrace();
+      } catch (NoSuchPaddingException e) {
+        // TODO Auto-generated catch block
+        e.printStackTrace();
+      } catch (InvalidKeyException e) {
+        // TODO Auto-generated catch block
+        e.printStackTrace();
+      } catch (IllegalBlockSizeException e) {
+        // TODO Auto-generated catch block
+        e.printStackTrace();
+      } catch (BadPaddingException e) {
+        // TODO Auto-generated catch block
+        e.printStackTrace();
+      } catch (InvalidAlgorithmParameterException e1) {
+        // TODO Auto-generated catch block
+        e1.printStackTrace();
       }
     }
     return null;

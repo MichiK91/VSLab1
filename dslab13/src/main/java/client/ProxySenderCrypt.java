@@ -152,10 +152,22 @@ public class ProxySenderCrypt implements Sender {
           proxySender.send(new MessageWrapper(encryptReq,false));
         }
         
-      } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException e) {
+      } catch (NoSuchAlgorithmException e) {
         // TODO Auto-generated catch block
         e.printStackTrace();
-      } 
+      } catch (NoSuchPaddingException e) {
+        // TODO Auto-generated catch block
+        e.printStackTrace();
+      } catch (InvalidKeyException e) {
+        // TODO Auto-generated catch block
+        e.printStackTrace();
+      } catch (IllegalBlockSizeException e) {
+        // TODO Auto-generated catch block
+        e.printStackTrace();
+      } catch (BadPaddingException e) {
+        // TODO Auto-generated catch block
+        e.printStackTrace();
+      }
     } else if (req instanceof Request){
       try {
         cryptCipher = Cipher.getInstance("AES/CTR/NoPadding");
@@ -192,16 +204,32 @@ public class ProxySenderCrypt implements Sender {
           e.printStackTrace();
         }
       }else if(req instanceof MessageWrapper){
-        
+        System.out.println("3rd message");
         try {
           cryptCipher = Cipher.getInstance("AES/CTR/NoPadding");
           SecureRandom secure = new SecureRandom(ivParameter);
           secure.nextBytes(new byte[16]);
           cryptCipher.init(Cipher.ENCRYPT_MODE, AESKey, secure);
+          System.out.println("3rd message content "+new String(Base64.decode(((MessageWrapper) req).getContent())));
           byte[] encryptReq = cryptCipher.doFinal(((MessageWrapper) req).getContent());
-
+          /*cryptCipher.init(Cipher.DECRYPT_MODE, AESKey, new IvParameterSpec(ivParameter), secure);
+          byte[] decryptReq = cryptCipher.doFinal(((MessageWrapper) req).getContent());
+          System.out.println("3rd message content2 "+new String(Base64.decode(decryptReq)));
+*/
           proxySender.send(new MessageWrapper(encryptReq, ((MessageWrapper) req).isMessage()));
-        } catch (InvalidKeyException | IllegalBlockSizeException | BadPaddingException | NoSuchAlgorithmException | NoSuchPaddingException e) {
+        } catch (NoSuchAlgorithmException e) {
+          // TODO Auto-generated catch block
+          e.printStackTrace();
+        } catch (NoSuchPaddingException e) {
+          // TODO Auto-generated catch block
+          e.printStackTrace();
+        } catch (InvalidKeyException e) {
+          // TODO Auto-generated catch block
+          e.printStackTrace();
+        } catch (IllegalBlockSizeException e) {
+          // TODO Auto-generated catch block
+          e.printStackTrace();
+        } catch (BadPaddingException e) {
           // TODO Auto-generated catch block
           e.printStackTrace();
         }
@@ -228,19 +256,34 @@ public class ProxySenderCrypt implements Sender {
         byte[] decryptReq = cryptCipher.doFinal((byte[])req);
         String answer = new String(decryptReq);
         String[] answerSplit = answer.split(" ");
-        System.out.println(new String(Base64.decode(answerSplit[1].getBytes())));
-        System.out.println(new String(clientChallenge));
+        System.out.println("gotten challenge: "+new String(Base64.decode(answerSplit[1].getBytes())));
+        System.out.println("challenge: "+new String(clientChallenge));
         if(answerSplit.length == 5 && answerSplit[0].equals("!ok") && Arrays.equals(Base64.decode(answerSplit[1].getBytes()), clientChallenge)){
           
           byte[] decodedAES = Base64.decode(answerSplit[3].getBytes());
           AESKey = new SecretKeySpec(decodedAES, 0, decodedAES.length, "AES");
           ivParameter = Base64.decode(answerSplit[4].getBytes());
-
+          System.out.println("proxychallenge: "+new String(Base64.decode(answerSplit[2].getBytes())));
           this.send(new MessageWrapper(answerSplit[2].getBytes(),false));
           return "!secureChannelCreated";
 
         } 
-      } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException | IOException e) {
+      } catch (NoSuchAlgorithmException e) {
+        // TODO Auto-generated catch block
+        e.printStackTrace();
+      } catch (NoSuchPaddingException e) {
+        // TODO Auto-generated catch block
+        e.printStackTrace();
+      } catch (InvalidKeyException e) {
+        // TODO Auto-generated catch block
+        e.printStackTrace();
+      } catch (IllegalBlockSizeException e) {
+        // TODO Auto-generated catch block
+        e.printStackTrace();
+      } catch (BadPaddingException e) {
+        // TODO Auto-generated catch block
+        e.printStackTrace();
+      } catch (IOException e) {
         // TODO Auto-generated catch block
         e.printStackTrace();
       }
@@ -290,8 +333,24 @@ public class ProxySenderCrypt implements Sender {
           
         }
         return new MessageWrapper(decryptReq, false);
-      } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException | InvalidAlgorithmParameterException e) {
+      } catch (NoSuchAlgorithmException e) {
+        // TODO Auto-generated catch block
         e.printStackTrace();
+      } catch (NoSuchPaddingException e) {
+        // TODO Auto-generated catch block
+        e.printStackTrace();
+      } catch (InvalidKeyException e) {
+        // TODO Auto-generated catch block
+        e.printStackTrace();
+      } catch (IllegalBlockSizeException e) {
+        // TODO Auto-generated catch block
+        e.printStackTrace();
+      } catch (BadPaddingException e) {
+        // TODO Auto-generated catch block
+        e.printStackTrace();
+      } catch (InvalidAlgorithmParameterException e1) {
+        // TODO Auto-generated catch block
+        e1.printStackTrace();
       }
     }
     return new LoginResponse(LoginResponse.Type.WRONG_CREDENTIALS);

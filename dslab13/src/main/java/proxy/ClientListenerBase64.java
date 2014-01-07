@@ -36,7 +36,7 @@ public class ClientListenerBase64 implements Listener{
       byte[] req = Base64.decode((byte[])o);
       return req;
     } else if (o instanceof MessageWrapper){
-      System.out.println(((MessageWrapper) o).isMessage());
+      System.out.println("receive cleint listener messagewrapper "+((MessageWrapper) o).isMessage());
       return new MessageWrapper(Base64.decode(((MessageWrapper) o).getContent()),((MessageWrapper) o).isMessage());
     }
     return null;
