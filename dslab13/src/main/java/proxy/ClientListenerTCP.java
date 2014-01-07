@@ -18,91 +18,66 @@ import message.request.LogoutRequest;
 import message.request.UploadRequest;
 
 
-public class ClientListenerTCP implements Runnable, Closeable {
+public class ClientListenerTCP implements Closeable, Listener {
 
 	private Socket csocket;
 	private ObjectInputStream strin;
 	private ObjectOutputStream strout;
-	private ProxyCli proxycli;
-	private ProxyImpl proxy;
 
 	private boolean run;
 
-	public ClientListenerTCP(Socket csocket, ProxyCli proxycli) {
+	public ClientListenerTCP() {
 		this.run = false;
-		this.proxycli = proxycli;
-		proxy = new ProxyImpl(this.proxycli);
-
-		this.csocket = csocket;
-		try {
-			strin = new ObjectInputStream(csocket.getInputStream());
-			strout = new ObjectOutputStream(csocket.getOutputStream());
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-
+		
 	}
 
-	@Override
-	public void run() {
-
-		run = true;
-		while (run) {
-
-			// recieve object
-			try {
-				Object o = strin.readObject();
-				Request req = null;
-				if (o instanceof Request) {
-					req = (Request) o;
-					System.out.println(req);
-				}
-
-				// execute object
-				Response res = sendRequestToProxy(req);
-
-				// send object
-				strout.writeObject(res);
-			} catch (EOFException e) {
-				// client closed connection
-				System.out.println("Client closed connection.");
-				break;
-			} catch (IOException e) {
-				// socket closed
-				break;
-			} catch (ClassNotFoundException e) {
-				break;
-			}
-
-		}
-	}
-
-	private Response sendRequestToProxy(Request req) throws IOException {
-		if (req.getClass().equals(LoginRequest.class)) {
-			return proxy.login((LoginRequest) req);
-		} else if (req.getClass().equals(BuyRequest.class)) {
-			return proxy.buy((BuyRequest) req);
-		} else if (req.getClass().equals(CreditsRequest.class)) {
-			return proxy.credits();
-		} else if (req.getClass().equals(ListRequest.class)) {
-			return proxy.list();
-		} else if (req.getClass().equals(DownloadTicketRequest.class)) {
-			return proxy.download((DownloadTicketRequest) req);
-		} else if (req.getClass().equals(UploadRequest.class)) {
-			return proxy.upload((UploadRequest) req);
-		} else if (req.getClass().equals(LogoutRequest.class)) {
-			return proxy.logout();
-		}
-		return null;
-	}
-
+	
 	@Override
 	public void close() throws IOException {
-		proxy.close();
-		run = false;
+		
 		strout.close();
 		strin.close();
 		csocket.close();
 	}
+
+  @Override
+  public void listen(Object req) throws IOException {
+    try {
+      strout.writeObject(req);
+    } catch (Exception e) {
+      //proxy already closed
+      System.out.println("Proxy has gone offline");
+    }
+  }
+
+  @Override
+  public Object receive() {
+    try {
+      Object o = strin.readObject();
+      return o;
+    } catch (ClassNotFoundException e)  {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }catch (IOException e)  {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }
+    System.out.println("null received");
+    return null;
+  }
+  
+  public ObjectInputStream getInputStream(){
+    return this.strin;
+  }
+  
+  public void setSocket(Socket socket){
+    this.csocket = socket;
+    try {
+      strin = new ObjectInputStream(csocket.getInputStream());
+      strout = new ObjectOutputStream(csocket.getOutputStream());
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+  }
 
 }

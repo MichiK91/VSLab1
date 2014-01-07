@@ -1,12 +1,18 @@
 package client;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.ObjectOutput;
+import java.io.ObjectOutputStream;
 import java.net.UnknownHostException;
+import java.security.SecureRandom;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+
+import org.bouncycastle.util.encoders.Base64;
 
 import util.Config;
 import cli.Command;
@@ -24,7 +30,7 @@ public class ClientCli implements IClientCli {
 
 	// thread pool
 	private ExecutorService threads = Executors.newCachedThreadPool();
-	private ProxySenderTCP psender;	
+	private ProxySenderCrypt psender;	
 	private ServerSenderTCP ssender;
 	
 	private boolean login;
@@ -37,9 +43,8 @@ public class ClientCli implements IClientCli {
 		// register the shell
 		this.shell.register(this);
 		this.threads.execute(this.shell);
-
 		try {
-			psender = new ProxySenderTCP(config);
+			psender = new ProxySenderCrypt(new ProxySenderBase64(new ProxySenderTCP(config)));
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
@@ -53,19 +58,27 @@ public class ClientCli implements IClientCli {
 	@Command
 	public LoginResponse login(String username, String password)
 			throws IOException {
-		LoginRequest lreq = new LoginRequest(username,password);
-		LoginResponse lres = (LoginResponse) psender.send(lreq);
-		if(lres.getType().equals(LoginResponse.Type.SUCCESS)){
-			login = true;
-		}
-		return lres;
+      psender.send("!login " + username);
+      Object res = psender.receive();
+      if(res instanceof String && res.equals("!secureChannelCreated")){
+        psender.send(new LoginRequest(username, password));
+        LoginResponse lres = (LoginResponse)psender.receive();
+        if(((LoginResponse) lres).getType().equals(LoginResponse.Type.SUCCESS)){
+          login = true;
+        }
+        return (LoginResponse) lres;
+      }
+      return new LoginResponse(LoginResponse.Type.WRONG_CREDENTIALS);
+           
+          
 	}
 
 	@Override
 	@Command
 	public Response credits() throws IOException {
 		CreditsRequest creq = new CreditsRequest();
-		Response res = psender.send(creq);
+		psender.send(creq);
+		Response res = (Response) psender.receive();
 		return res;
 	}
 
@@ -73,7 +86,8 @@ public class ClientCli implements IClientCli {
 	@Command
 	public Response buy(long credits) throws IOException {
 		BuyRequest breq = new BuyRequest(credits);
-		Response res = psender.send(breq);
+		psender.send(breq);
+    Response res = (Response) psender.receive();
 		return res;
 	}
 
@@ -81,7 +95,8 @@ public class ClientCli implements IClientCli {
 	@Command
 	public Response list() throws IOException {
 		ListRequest lreq = new ListRequest();
-		Response res = psender.send(lreq);
+		psender.send(lreq);
+    Response res = (Response) psender.receive();
 		return res;
 	}
 
@@ -89,7 +104,8 @@ public class ClientCli implements IClientCli {
 	@Command
 	public Response download(String filename) throws IOException {
 		DownloadTicketRequest dtreq = new DownloadTicketRequest(filename);
-		Object res = psender.send(dtreq);
+		psender.send(dtreq);
+    Response res = (Response) psender.receive();
 		DownloadTicketResponse dtres;
 		if(res instanceof DownloadTicketResponse){
 			dtres = (DownloadTicketResponse) res;
@@ -103,7 +119,9 @@ public class ClientCli implements IClientCli {
 		DownloadFileRequest dfreq = new DownloadFileRequest(dt);
 		ssender = new ServerSenderTCP(dt.getAddress(), dt.getPort());
 		
-		Object res1 = ssender.send(dfreq);
+		psender.send(dfreq);
+    Response res1 = (Response) ssender.receive();
+
 		DownloadFileResponse dfres;
 		if(res1 instanceof DownloadFileResponse){
 			dfres = (DownloadFileResponse) res1;
@@ -168,7 +186,8 @@ public class ClientCli implements IClientCli {
 		if(!foundfile)
 			return new MessageResponse("Invalid file name");
 		UploadRequest ureq = new UploadRequest(filename, 1, content);
-		MessageResponse res = (MessageResponse) psender.send(ureq);
+		psender.send(ureq);
+		MessageResponse res = (MessageResponse) psender.receive();
 		return res;
 	}
 
@@ -176,7 +195,9 @@ public class ClientCli implements IClientCli {
 	@Command
 	public MessageResponse logout() throws IOException {
 		LogoutRequest lreq = new LogoutRequest();
-		MessageResponse mres = (MessageResponse) psender.send(lreq);
+		
+		psender.send(lreq);
+		MessageResponse mres = (MessageResponse) psender.receive();
 		login = false;
 		return mres;
 	}
