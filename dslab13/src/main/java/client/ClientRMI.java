@@ -1,5 +1,7 @@
 package client;
 
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.Serializable;
 import java.net.MalformedURLException;
@@ -14,6 +16,8 @@ import java.rmi.server.UnicastRemoteObject;
 import java.security.PublicKey;
 import java.security.interfaces.RSAPublicKey;
 
+import org.bouncycastle.openssl.PEMReader;
+
 import message.Response;
 import message.response.MessageResponse;
 import cli.Command;
@@ -24,13 +28,14 @@ import util.Config;
 public class ClientRMI extends UnicastRemoteObject implements IClientRMI, Serializable{
 
 	
-	private Config config;
+	private Config config,cliconfig;
 	private ClientCli client;
 	private IProxyRMI stub;
 	private Registry registry;
 	
 	public ClientRMI(ClientCli client) throws RemoteException{
 		this.config = new Config("mc");
+		this.cliconfig = new Config("client");
 		this.client = client;
 		
 		//init
@@ -81,14 +86,27 @@ public class ClientRMI extends UnicastRemoteObject implements IClientRMI, Serial
 	public Response getProxyPublicKey() throws RemoteException{
 		PublicKey key = stub.getProxyPublicKey();
 		System.out.println(key);
+		//TODO speichern?
 		return new MessageResponse("Successfully received public key of Proxy.");
 	}
 
 	@Override
 	@Command
 	public Response setUserPublicKey(String username) throws RemoteException{
-		// TODO Auto-generated method stub
-		return null;
+		String path = cliconfig.getString("keys.dir");
+		PublicKey pkey = null;
+		try {
+			PEMReader in = new PEMReader(new FileReader(path + "/"+ username.toLowerCase() +".pub.pem"));
+			pkey = (PublicKey) in.readObject();
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return stub.setUserPublicKey(username, pkey);
+		//return new MessageResponse("Successfully transmitted public key of user: " + username);
 	}
 	
 	public void notify(String filename, long numberOfDownloads) throws RemoteException{

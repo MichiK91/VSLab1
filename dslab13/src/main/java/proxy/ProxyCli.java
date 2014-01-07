@@ -2,6 +2,7 @@ package proxy;
 
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.net.SocketException;
 import java.security.PublicKey;
@@ -90,6 +91,22 @@ public class ProxyCli implements IProxyCli {
 			e.printStackTrace();
 		}
 		return pkey;
+	}
+	
+	public boolean setConfigPublicKey(String username, PublicKey pkey){
+		String path = config.getString("keys.dir");
+		try {
+			PEMWriter out = new PEMWriter(new FileWriter(path + "/proxy.pub.pem"));
+			out.writeObject(pkey);
+			return true;
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return false;
 	}
 
 	@Override

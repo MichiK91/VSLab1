@@ -115,9 +115,11 @@ public class ProxyRMI implements IProxyRMI{
 	}
 
 	@Override
-	public Response setUserPublicKey(String username) throws RemoteException {
-		// TODO Auto-generated method stub
-		return null;
+	public Response setUserPublicKey(String username, PublicKey pkey) throws RemoteException {
+		if(proxy.setConfigPublicKey(username, pkey)){
+			return new MessageResponse("Successfully transmitted public key of user: " + username);
+		}
+		return new MessageResponse("Failed");
 	}
 
 	public void close(){

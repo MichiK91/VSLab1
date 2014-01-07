@@ -23,7 +23,7 @@ public interface IProxyRMI extends Remote {
 
 	public PublicKey getProxyPublicKey() throws RemoteException;
 	
-	public Response setUserPublicKey(String username) throws RemoteException;
+	public Response setUserPublicKey(String username, PublicKey pkey) throws RemoteException;
 
 
 }
