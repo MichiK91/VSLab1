@@ -17,6 +17,7 @@ public class ServerSenderTCP implements Closeable, Sender {
 	private InetAddress addr;
 	private int port;
 	
+	
 	public ServerSenderTCP(InetAddress addr,int port){
 		this.addr = addr;
 		this.port = port;
