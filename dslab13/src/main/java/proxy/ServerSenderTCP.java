@@ -76,15 +76,15 @@ public class ServerSenderTCP implements Closeable {
 		} catch (InvalidKeyException e) {
 			e.printStackTrace();
 		} 
-		
+
 		hMac.update(content);
 		byte[] hash = hMac.doFinal();
-		
+
 		byte[] base64Message = Base64.encode(hash);
-		
+
 		String send = new String(base64Message) + " !upload " + "up.txt " + "0 " + new String(content);
 		System.out.println(send);
-		
+
 		try {
 			System.out.println(ss.send(send));
 		} catch (IOException e) {
@@ -112,25 +112,31 @@ public class ServerSenderTCP implements Closeable {
 		if(!connect()){
 			return null;
 		}
-		//send request
-		strout = new ObjectOutputStream(socket.getOutputStream());
-		strout.writeObject(req); 
-		//get response
-		strin = new ObjectInputStream(socket.getInputStream());
+
 		Response res = null;
-		try {
-			res = (Response) strin.readObject();
-		} catch (ClassNotFoundException e) {
-			e.printStackTrace();
-		}
-		
-		if (res.getClass().equals(MessageResponse.class)) {
-			String s = ((MessageResponse)res).getMessage();
-			if(s.equals("Fail")){
-				//TODO
+		do{
+			//send request
+			strout = new ObjectOutputStream(socket.getOutputStream());
+			strout.writeObject(req); 
+			//get response
+			strin = new ObjectInputStream(socket.getInputStream());
+			try {
+				res = (Response) strin.readObject();
+			} catch (ClassNotFoundException e) {
+				e.printStackTrace();
 			}
-		}
-		
+
+			if (res.getClass().equals(MessageResponse.class)) {
+				String s = ((MessageResponse)res).getMessage();
+				if(!s.equals("Failed")){
+					break;
+					
+				} else {
+					System.out.println(res);
+				}
+			}
+		}while(true);
+
 		close();
 		return res;
 	}
