@@ -11,6 +11,7 @@
 			<attribute name="owner.project.facets" value="java"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="lib" path="C:/Program Files (x86)/Java/jre7/lib/ext/bcprov-jdk16-140.jar"/>
+	<classpathentry kind="lib" path="lib/bcprov-jdk16-140.jar"/>
+	<classpathentry kind="lib" path="lib/bouncycastle.jar"/>
 	<classpathentry kind="output" path="build"/>
 </classpath>
