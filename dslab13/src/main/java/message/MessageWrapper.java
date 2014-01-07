@@ -1,6 +1,8 @@
 package message;
 
-public class MessageWrapper implements Request, Response{
+import java.io.Serializable;
+
+public class MessageWrapper implements Serializable{
 
   /**
    * 
@@ -18,6 +20,7 @@ public class MessageWrapper implements Request, Response{
     return content;
   }
 
+  //true if serialized message-object, false if serialized string
   public boolean isMessage() {
     return isMessage;
   }

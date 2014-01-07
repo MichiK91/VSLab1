@@ -43,11 +43,8 @@ public class ClientCli implements IClientCli {
 		// register the shell
 		this.shell.register(this);
 		this.threads.execute(this.shell);
-		System.out.println("12345");
 		try {
-		  System.out.println("12345");
 			psender = new ProxySenderCrypt(new ProxySenderBase64(new ProxySenderTCP(config)));
-			System.out.println("12345");
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
 		} catch (IOException e) {

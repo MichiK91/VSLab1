@@ -11,6 +11,7 @@ import java.io.ObjectInput;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
+import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
@@ -26,6 +27,7 @@ import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
+import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
 import message.MessageWrapper;
@@ -124,7 +126,6 @@ public class ProxySenderCrypt implements Sender {
           
           ByteArrayOutputStream bos = new ByteArrayOutputStream();
           ObjectOutput out = null;
-          System.out.println("x");
           try {
             out = new ObjectOutputStream(bos);   
             out.writeObject(clientChallenge);
@@ -144,7 +145,9 @@ public class ProxySenderCrypt implements Sender {
           }
         } else {
           cryptCipher = Cipher.getInstance("AES/CTR/NoPadding");
-          cryptCipher.init(Cipher.ENCRYPT_MODE, AESKey, new SecureRandom(ivParameter));
+          SecureRandom secure = new SecureRandom(ivParameter);
+          secure.nextBytes(new byte[16]);
+          cryptCipher.init(Cipher.ENCRYPT_MODE, AESKey, secure);
           byte[] encryptReq = cryptCipher.doFinal(((String)req).getBytes());
           proxySender.send(new MessageWrapper(encryptReq,false));
         }
@@ -162,10 +165,14 @@ public class ProxySenderCrypt implements Sender {
         out = new ObjectOutputStream(bos);   
         out.writeObject(req);
         byte[] yourBytesReq = bos.toByteArray();
-        
-        cryptCipher.init(Cipher.ENCRYPT_MODE, AESKey, new SecureRandom(ivParameter));
+        System.out.println("AES: "+new String(AESKey.getEncoded()));
+        System.out.println("IV: "+new String(ivParameter));
+        SecureRandom secure = new SecureRandom(ivParameter);
+        secure.nextBytes(new byte[16]);
+        cryptCipher.init(Cipher.ENCRYPT_MODE, AESKey, secure);
         byte[] encryptReq = cryptCipher.doFinal(yourBytesReq);
-
+        
+        System.out.println("xxxxxxxxxxx");
         proxySender.send(new MessageWrapper(encryptReq, true));
           
         } catch (NoSuchAlgorithmException e) {
@@ -184,7 +191,22 @@ public class ProxySenderCrypt implements Sender {
           // TODO Auto-generated catch block
           e.printStackTrace();
         }
-      } 
+      }else if(req instanceof MessageWrapper){
+        
+        try {
+          cryptCipher = Cipher.getInstance("AES/CTR/NoPadding");
+          SecureRandom secure = new SecureRandom(ivParameter);
+          secure.nextBytes(new byte[16]);
+          cryptCipher.init(Cipher.ENCRYPT_MODE, AESKey, secure);
+          byte[] encryptReq = cryptCipher.doFinal(((MessageWrapper) req).getContent());
+
+          proxySender.send(new MessageWrapper(encryptReq, ((MessageWrapper) req).isMessage()));
+        } catch (InvalidKeyException | IllegalBlockSizeException | BadPaddingException | NoSuchAlgorithmException | NoSuchPaddingException e) {
+          // TODO Auto-generated catch block
+          e.printStackTrace();
+        }
+        
+      }
   }
 
   @Override
@@ -205,9 +227,9 @@ public class ProxySenderCrypt implements Sender {
         
         byte[] decryptReq = cryptCipher.doFinal((byte[])req);
         String answer = new String(decryptReq);
-        System.out.println("answer"+answer);
         String[] answerSplit = answer.split(" ");
-
+        System.out.println(new String(Base64.decode(answerSplit[1].getBytes())));
+        System.out.println(new String(clientChallenge));
         if(answerSplit.length == 5 && answerSplit[0].equals("!ok") && Arrays.equals(Base64.decode(answerSplit[1].getBytes()), clientChallenge)){
           
           byte[] decodedAES = Base64.decode(answerSplit[3].getBytes());
@@ -223,43 +245,52 @@ public class ProxySenderCrypt implements Sender {
         e.printStackTrace();
       }
     } else if(req instanceof MessageWrapper){
-      
+      System.out.println("1"+((MessageWrapper) req).isMessage());
       Cipher cryptCipher;
       try {
         cryptCipher = Cipher.getInstance("AES/CTR/NoPadding");
-        cryptCipher.init(Cipher.DECRYPT_MODE, privateKey, new SecureRandom(ivParameter));
-        
+        SecureRandom secure = new SecureRandom(ivParameter);
+        secure.nextBytes(new byte[16]);
+        cryptCipher.init(Cipher.DECRYPT_MODE, privateKey, new IvParameterSpec(ivParameter), secure);
+        System.out.println("2"+((MessageWrapper) req).isMessage());
         byte[] decryptReq = cryptCipher.doFinal(((MessageWrapper)req).getContent());
-        ByteArrayInputStream bis = new ByteArrayInputStream(decryptReq);
-        ObjectInput in = null;
-        try {
-          in = new ObjectInputStream(bis);
-          Object o = in.readObject(); 
-          if(o instanceof Response){
-            return o;
-          }
-        } catch (IOException e) {
-          // TODO Auto-generated catch block
-          e.printStackTrace();
-        } catch (ClassNotFoundException e) {
-          // TODO Auto-generated catch block
-          e.printStackTrace();
-        } finally {
+        System.out.println("3"+((MessageWrapper) req).isMessage());
+        if(((MessageWrapper) req).isMessage()){
+          
+          ByteArrayInputStream bis = new ByteArrayInputStream(decryptReq);
+          ObjectInput in = null;
           try {
-            bis.close();
-          } catch (IOException ex) {
-            // ignore close exception
-          }
-          try {
-            if (in != null) {
-              in.close();
+            in = new ObjectInputStream(bis);
+            Object o = in.readObject(); 
+            System.out.println("Send responseobject");
+            if(o instanceof Response){
+              return o;
             }
-          } catch (IOException ex) {
-            // ignore close exception
+          } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+          } catch (ClassNotFoundException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+          } finally {
+            try {
+              bis.close();
+            } catch (IOException ex) {
+              // ignore close exception
+            }
+            try {
+              if (in != null) {
+                in.close();
+              }
+            } catch (IOException ex) {
+              // ignore close exception
+            }
           }
+        } else {
+          
         }
-        return new MessageWrapper(decryptReq, true);
-      } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException e) {
+        return new MessageWrapper(decryptReq, false);
+      } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException | InvalidAlgorithmParameterException e) {
         e.printStackTrace();
       }
     }

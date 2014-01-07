@@ -34,7 +34,6 @@ public class ProxySenderTCP implements Closeable, Sender {
 	}
 
 	public void send(Object req) {
-    System.out.println("send Object TCP "+req);
 		// send request
 		try {
 			strout.writeObject(req);
@@ -54,7 +53,6 @@ public class ProxySenderTCP implements Closeable, Sender {
     Object res = null;
     try {
       res = strin.readObject();
-      System.out.println("receive Object tcp "+res);
     } catch (ClassNotFoundException e) {
       e.printStackTrace();
     } catch (IOException e) {

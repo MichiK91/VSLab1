@@ -13,6 +13,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
 import java.io.InputStreamReader;
+import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
@@ -27,6 +28,7 @@ import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.KeyGenerator;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
+import javax.crypto.spec.IvParameterSpec;
 
 import org.bouncycastle.openssl.PEMReader;
 import org.bouncycastle.openssl.PasswordFinder;
@@ -129,7 +131,7 @@ public class ClientListenerCrypt implements Runnable, Closeable, Listener{
   @Override
   public Object receive() {
     Object o = clientListenerBase64.receive();
-    System.out.println("crypt object received "+o);
+    
     if(o instanceof byte[]){
       
       Cipher cryptCipher;
@@ -168,13 +170,10 @@ public class ClientListenerCrypt implements Runnable, Closeable, Listener{
           
           secureRandom.nextBytes(new byte[16]);
          
-          byte[] ivparameter = secureRandom.generateSeed(16);
+          ivParameter = secureRandom.generateSeed(16);
           try {
-            
-              System.out.println("!ok " + answerSplit[2] + " " + new String(Base64.encode(proxyChallenge))+" "+new String(Base64.encode(AESKey.getEncoded()))+" "+new String(Base64.encode(ivparameter)));
-              this.listen("!ok " + answerSplit[2] + " " + new String(Base64.encode(proxyChallenge))+" "+new String(Base64.encode(AESKey.getEncoded()))+" "+new String(Base64.encode(ivparameter)));
-            
-            
+            System.out.println("proxyChallenge: "+new String(proxyChallenge));
+            this.listen("!ok " + answerSplit[2] + " " + new String(Base64.encode(proxyChallenge))+" "+new String(Base64.encode(AESKey.getEncoded()))+" "+new String(Base64.encode(ivParameter)));
             
           } catch (IOException e) {
             // TODO Auto-generated catch block
@@ -191,12 +190,18 @@ public class ClientListenerCrypt implements Runnable, Closeable, Listener{
       Cipher cryptCipher;
       try {
         cryptCipher = Cipher.getInstance("AES/CTR/NoPadding");
-        cryptCipher.init(Cipher.DECRYPT_MODE, AESKey, new SecureRandom(ivParameter));
-        
+        System.out.println("AES: "+new String(AESKey.getEncoded()));
+        System.out.println("IV: "+new String(ivParameter));
+        SecureRandom secure = new SecureRandom(ivParameter);
+        secure.nextBytes(new byte[16]);
+        cryptCipher.init(Cipher.DECRYPT_MODE, AESKey, new IvParameterSpec(ivParameter), secure);
+        System.out.println("dAES: ");
         byte[] decryptReq = cryptCipher.doFinal(((MessageWrapper) o).getContent());
-
+        System.out.println("AES: "+decryptReq+" "+((MessageWrapper) o).isMessage());
         if(((MessageWrapper) o).isMessage()){
+          System.out.println("generate request out of byte[]");
           if(connected){
+            System.out.println("generate request out of byte[]");
             ByteArrayInputStream bis = new ByteArrayInputStream(((MessageWrapper) o).getContent());
             ObjectInput in = null;
             try {
@@ -218,13 +223,15 @@ public class ClientListenerCrypt implements Runnable, Closeable, Listener{
             
           }
         } else {
-
-          if(Arrays.equals(this.proxyChallenge, Base64.decode(decryptReq))){
+          System.out.println(new String(this.proxyChallenge));
+          System.out.println(new String(decryptReq));
+          
+          if(Arrays.equals(this.proxyChallenge, decryptReq)){
             connected = true;
           }
 
         }
-      } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException e) {
+      } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException | InvalidAlgorithmParameterException e) {
         e.printStackTrace();
       }
     }

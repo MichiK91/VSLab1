@@ -33,12 +33,10 @@ public class ClientListenerBase64 implements Listener{
   public Object receive() {
     Object o = this.clientListenerTCP.receive();
     if(o instanceof byte[]){
-      System.out.println("base 64 byte[] received "+o);
       byte[] req = Base64.decode((byte[])o);
-      System.out.println(req);
       return req;
     } else if (o instanceof MessageWrapper){
-      System.out.println("base 64 mw received "+o.getClass());
+      System.out.println(((MessageWrapper) o).isMessage());
       return new MessageWrapper(Base64.decode(((MessageWrapper) o).getContent()),((MessageWrapper) o).isMessage());
     }
     return null;
