@@ -26,6 +26,9 @@
 			<fileset dir="${test.resources.dir}">
 				<include name="*.txt" />
 			</fileset>
+			<fileset dir="${test.resources.dir}">
+				<include name="*.properties" />
+			</fileset>
 		</copy>
 	</target>
 
@@ -111,4 +114,9 @@
 	</target>
 
 	<target name="rebuild" depends="clean, compile" description="Clean and build products." />
+
+	<target name="run-test" depends="compile" description="Run MultiThread Tests">
+		<java classname="your.MultiThreadingTest" fork="true" classpathref="project.classpath" />
+	</target>
+
 </project>
