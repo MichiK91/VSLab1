@@ -74,18 +74,15 @@ public class ClientAccept implements Runnable{
     PEMReader in;
     try {
       in = new PEMReader(new FileReader(pathToPrivateKey), new PasswordFinder() {
-
         @Override
         public char[] getPassword() {
         
-        // reads the password from standard input for decrypting the private key
-        System.out.println("Enter pass phrase:");
-        String pw ="";
-        
-        pw = "12345"; //TODO passwortabfrage in shell
-        
-        return pw.toCharArray();
+          // reads the password from standard input for decrypting the private key
+          System.out.println("Enter pass phrase:");
+          return "12345".toCharArray();//new BufferedReader(new InputStreamReader(System.in)).readLine().toCharArray();
+          
         }
+        
       });
       KeyPair keyPair = (KeyPair) in.readObject(); 
       System.out.println("keypair read");

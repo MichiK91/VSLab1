@@ -40,6 +40,7 @@ import org.bouncycastle.openssl.PasswordFinder;
 import org.bouncycastle.util.encoders.Base64;
 
 import util.Config;
+import util.Serializer;
 
 
 public class ProxySenderCrypt implements Sender {
@@ -82,25 +83,19 @@ public class ProxySenderCrypt implements Sender {
         Config config = new Config("client");
         String keysDir = config.getString("keys.dir");
         String[] parts = ((String)req).split(" ");
-        if(parts.length==2){
+        if(parts.length==3){
           
           String pathToPrivateKey = keysDir+"/"+parts[1]+".pem";
           PEMReader pemReader = null;
           try {
+            final String pw = parts[2];
             pemReader = new PEMReader(new FileReader(pathToPrivateKey), new PasswordFinder() {
 
               @Override
               public char[] getPassword() {
               
-                /*try {
-                  // reads the password from standard input for decrypting the private key
-                  //System.out.println("Enter pass phrase:");
-                  return new BufferedReader(new InputStreamReader(System.in)).readLine().toCharArray();
-                } catch (IOException e) {
-                  // TODO Auto-generated catch block
-                  e.printStackTrace();
-                }*/
-                return new char[]{'1','2','3','4','5'};//TODO Passwortabfrage
+                return pw.toCharArray();
+                
               }
             });
             KeyPair keyPair = (KeyPair) pemReader.readObject(); 
@@ -130,7 +125,7 @@ public class ProxySenderCrypt implements Sender {
             out = new ObjectOutputStream(bos);   
             out.writeObject(clientChallenge);
             byte[] challenge = bos.toByteArray();
-            byte[] encryptReq = cryptCipher.doFinal(((String)req + " " + new String(Base64.encode(clientChallenge))).getBytes());
+            byte[] encryptReq = cryptCipher.doFinal((parts[0]+" "+parts[1]+ " " + new String(Base64.encode(clientChallenge))).getBytes());
 
             proxySender.send(encryptReq);
           } finally {
@@ -177,14 +172,11 @@ public class ProxySenderCrypt implements Sender {
         out = new ObjectOutputStream(bos);   
         out.writeObject(req);
         byte[] yourBytesReq = bos.toByteArray();
-        System.out.println("AES: "+new String(AESKey.getEncoded()));
-        System.out.println("IV: "+new String(ivParameter));
         SecureRandom secure = new SecureRandom(ivParameter);
         secure.nextBytes(new byte[16]);
         cryptCipher.init(Cipher.ENCRYPT_MODE, AESKey, secure);
         byte[] encryptReq = cryptCipher.doFinal(yourBytesReq);
         
-        System.out.println("xxxxxxxxxxx");
         proxySender.send(new MessageWrapper(encryptReq, true));
           
         } catch (NoSuchAlgorithmException e) {
@@ -204,19 +196,14 @@ public class ProxySenderCrypt implements Sender {
           e.printStackTrace();
         }
       }else if(req instanceof MessageWrapper){
-        System.out.println("3rd message");
         try {
           cryptCipher = Cipher.getInstance("AES/CTR/NoPadding");
-          SecureRandom secure = new SecureRandom(ivParameter);
-          secure.nextBytes(new byte[16]);
-          cryptCipher.init(Cipher.ENCRYPT_MODE, AESKey, secure);
-          System.out.println("3rd message content "+new String(Base64.decode(((MessageWrapper) req).getContent())));
+
+          cryptCipher.init(Cipher.ENCRYPT_MODE, AESKey, new IvParameterSpec(ivParameter));
           byte[] encryptReq = cryptCipher.doFinal(((MessageWrapper) req).getContent());
-          /*cryptCipher.init(Cipher.DECRYPT_MODE, AESKey, new IvParameterSpec(ivParameter), secure);
-          byte[] decryptReq = cryptCipher.doFinal(((MessageWrapper) req).getContent());
-          System.out.println("3rd message content2 "+new String(Base64.decode(decryptReq)));
-*/
+
           proxySender.send(new MessageWrapper(encryptReq, ((MessageWrapper) req).isMessage()));
+        
         } catch (NoSuchAlgorithmException e) {
           // TODO Auto-generated catch block
           e.printStackTrace();
@@ -230,6 +217,9 @@ public class ProxySenderCrypt implements Sender {
           // TODO Auto-generated catch block
           e.printStackTrace();
         } catch (BadPaddingException e) {
+          // TODO Auto-generated catch block
+          e.printStackTrace();
+        } catch (InvalidAlgorithmParameterException e) {
           // TODO Auto-generated catch block
           e.printStackTrace();
         }
@@ -299,36 +289,19 @@ public class ProxySenderCrypt implements Sender {
         byte[] decryptReq = cryptCipher.doFinal(((MessageWrapper)req).getContent());
         System.out.println("3"+((MessageWrapper) req).isMessage());
         if(((MessageWrapper) req).isMessage()){
-          
-          ByteArrayInputStream bis = new ByteArrayInputStream(decryptReq);
-          ObjectInput in = null;
           try {
-            in = new ObjectInputStream(bis);
-            Object o = in.readObject(); 
-            System.out.println("Send responseobject");
+            Object o = Serializer.deserialize(decryptReq);
             if(o instanceof Response){
               return o;
             }
-          } catch (IOException e) {
+          } catch (ClassNotFoundException e1) {
             // TODO Auto-generated catch block
-            e.printStackTrace();
-          } catch (ClassNotFoundException e) {
+            e1.printStackTrace();
+          } catch (IOException e1) {
             // TODO Auto-generated catch block
-            e.printStackTrace();
-          } finally {
-            try {
-              bis.close();
-            } catch (IOException ex) {
-              // ignore close exception
-            }
-            try {
-              if (in != null) {
-                in.close();
-              }
-            } catch (IOException ex) {
-              // ignore close exception
-            }
+            e1.printStackTrace();
           }
+          
         } else {
           
         }
