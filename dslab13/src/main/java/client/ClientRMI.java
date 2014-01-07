@@ -109,6 +109,23 @@ public class ClientRMI extends UnicastRemoteObject implements IClientRMI, Serial
 		//return new MessageResponse("Successfully transmitted public key of user: " + username);
 	}
 	
+	@Command
+	public Response test(){
+		String path = cliconfig.getString("proxy.key");
+		try {
+			PEMReader in = new PEMReader(new FileReader(path));
+			PublicKey pkey = (PublicKey) in.readObject();
+			return new MessageResponse("Hallo");
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return null;		
+	}
+	
 	public void notify(String filename, long numberOfDownloads) throws RemoteException{
 		client.notify(filename,numberOfDownloads);
 	}
