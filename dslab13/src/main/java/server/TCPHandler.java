@@ -62,7 +62,6 @@ public class TCPHandler implements Runnable, Closeable {
 				ssocket.close();
 
 			} catch (IOException e) {
-				e.printStackTrace();
 				System.out.println("FileServer shuts down. No further downloads are allowed.");
 				break;
 			} catch (ClassNotFoundException e1) {

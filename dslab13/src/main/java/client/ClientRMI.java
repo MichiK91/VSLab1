@@ -39,7 +39,6 @@ public class ClientRMI extends UnicastRemoteObject implements IClientRMI, Serial
 			stub = (IProxyRMI) registry.lookup(getBindingName());
 		} catch (Exception e1) {
 			System.err.println("No proxy available.");
-			e1.printStackTrace();
 		}
 	}
 	

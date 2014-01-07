@@ -47,7 +47,16 @@ public class ProxyRMI implements IProxyRMI{
 		try {
 			IProxyRMI stub = (IProxyRMI) UnicastRemoteObject.exportObject(this, 0);
 
-			registry = LocateRegistry.createRegistry(getProxyRMIPort());
+			try{
+				registry = LocateRegistry.createRegistry(getProxyRMIPort());
+			}
+			catch(Exception e){
+				try {
+					registry = LocateRegistry.getRegistry(getProxyRMIPort());
+				} catch (RemoteException ex) {
+					ex.printStackTrace();
+				}
+			}
 
 			registry.bind(getBindingName(), stub);
 
@@ -76,7 +85,7 @@ public class ProxyRMI implements IProxyRMI{
 		}
 
 		int size = map.size();
-		
+
 		if(size >= 3){
 			for(int i = 0; i < 3; i++){
 				ret += "\n" + (i+1) + ". " + findMax(map);
@@ -114,7 +123,17 @@ public class ProxyRMI implements IProxyRMI{
 	public void close(){
 		try {
 			UnicastRemoteObject.unexportObject(this, false);
+			registry.unbind(getBindingName());
 		} catch (NoSuchObjectException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (AccessException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (RemoteException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (NotBoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} 
@@ -146,7 +165,7 @@ public class ProxyRMI implements IProxyRMI{
 			}
 		}
 		map.remove(maxname);
-		 
+
 		return maxname + " " + max;
 	}
 
