@@ -2,6 +2,7 @@ package client;
 
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Serializable;
 import java.net.MalformedURLException;
@@ -17,6 +18,7 @@ import java.security.PublicKey;
 import java.security.interfaces.RSAPublicKey;
 
 import org.bouncycastle.openssl.PEMReader;
+import org.bouncycastle.openssl.PEMWriter;
 
 import message.Response;
 import message.response.MessageResponse;
@@ -85,8 +87,19 @@ public class ClientRMI extends UnicastRemoteObject implements IClientRMI, Serial
 	@Command
 	public Response getProxyPublicKey() throws RemoteException{
 		PublicKey key = stub.getProxyPublicKey();
-		System.out.println(key);
-		//TODO speichern?
+		String path = config.getString("keys.dir");
+		
+		try {
+			PEMWriter out = new PEMWriter(new FileWriter(path + "/proxy.pub.pem"));
+			out.writeObject(key);
+			out.flush();
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		return new MessageResponse("Successfully received public key of Proxy.");
 	}
 
@@ -107,6 +120,23 @@ public class ClientRMI extends UnicastRemoteObject implements IClientRMI, Serial
 		}
 		return stub.setUserPublicKey(username, pkey);
 		//return new MessageResponse("Successfully transmitted public key of user: " + username);
+	}
+	
+	@Command
+	public Response test(){
+		String path = cliconfig.getString("key.dir");
+		try {
+			PEMReader in = new PEMReader(new FileReader(path + "/"+ "alice" +".pub.pem"));
+			PublicKey pkey = (PublicKey) in.readObject();
+			return new MessageResponse(""+pkey);
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return null;		
 	}
 	
 	public void notify(String filename, long numberOfDownloads) throws RemoteException{
