@@ -31,11 +31,11 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
 
 import org.bouncycastle.openssl.PEMReader;
-import org.bouncycastle.openssl.PasswordFinder;
 import org.bouncycastle.util.encoders.Base64;
 
 
 import util.Config;
+import util.Serializer;
 
 import message.MessageWrapper;
 import message.Request;
@@ -63,72 +63,12 @@ public class ClientListenerCrypt implements Runnable, Closeable, Listener{
   private ProxyImpl proxy;
   
   
-  public static void main(String[] args){
-   
-        
-        
-        Cipher crypt;
-        try {
-          crypt = Cipher.getInstance("AES/CTR/NoPadding");
-          SecureRandom secure = new SecureRandom();
-          byte[] iv = secure.generateSeed(16);
-          
-          secure.nextBytes(new byte[16]);
-
-          
-          
-          final byte[] number = new byte[16]; 
-          secure.nextBytes(number);
-          
-          KeyGenerator generator = KeyGenerator.getInstance("AES"); 
-          
-          int keysize = 256;
-          generator.init(keysize); 
-          SecretKey aeSKey = generator.generateKey();
-          
-          String michi = "michi";
-          byte[] bytes = michi.getBytes();
-          
-          crypt.init(Cipher.ENCRYPT_MODE, aeSKey, new SecureRandom(iv));
-          byte[] encrypted = crypt.doFinal(bytes);
-          crypt.init(Cipher.DECRYPT_MODE, aeSKey);
-          byte[] decrypted = crypt.doFinal(encrypted);
-          System.out.print(new String(decrypted));
-        } catch (NoSuchAlgorithmException e) {
-          // TODO Auto-generated catch block
-          e.printStackTrace();
-        } catch (NoSuchPaddingException e) {
-          // TODO Auto-generated catch block
-          e.printStackTrace();
-        } catch (InvalidKeyException e) {
-          // TODO Auto-generated catch block
-          e.printStackTrace();
-        } catch (IllegalBlockSizeException e) {
-          // TODO Auto-generated catch block
-          e.printStackTrace();
-        } catch (BadPaddingException e) {
-          // TODO Auto-generated catch block
-          e.printStackTrace();
-        }
-        
-        
-      
-    }
-
+  
   public ClientListenerCrypt(ClientListenerBase64 clientListenerBase64, ProxyCli proxycli, PrivateKey privateKey){
     this.clientListenerBase64 = clientListenerBase64;
     this.proxycli = proxycli;
     proxy = new ProxyImpl(this.proxycli);
     this.privateKey = privateKey;
-    
-    
-   
-    
-    
-    
-    
-    
-    
   }
   
   @Override
@@ -164,7 +104,7 @@ public class ClientListenerCrypt implements Runnable, Closeable, Listener{
         out.writeObject(req);
         byte[] yourBytesReq = bos.toByteArray();
         
-        cryptCipher.init(Cipher.ENCRYPT_MODE, AESKey, new SecureRandom(ivParameter));
+        cryptCipher.init(Cipher.ENCRYPT_MODE, AESKey, new IvParameterSpec(ivParameter));
         byte[] encryptReq = cryptCipher.doFinal(yourBytesReq);
         clientListenerBase64.listen(new MessageWrapper(encryptReq, true));
       } catch (NoSuchAlgorithmException e) {
@@ -180,6 +120,9 @@ public class ClientListenerCrypt implements Runnable, Closeable, Listener{
         // TODO Auto-generated catch block
         e.printStackTrace();
       } catch (BadPaddingException e) {
+        // TODO Auto-generated catch block
+        e.printStackTrace();
+      } catch (InvalidAlgorithmParameterException e) {
         // TODO Auto-generated catch block
         e.printStackTrace();
       }
@@ -217,7 +160,6 @@ public class ClientListenerCrypt implements Runnable, Closeable, Listener{
   @Override
   public Object receive() {
     Object o = clientListenerBase64.receive();
-    
     if(o instanceof byte[]){
       
       Cipher cryptCipher;
@@ -287,51 +229,30 @@ public class ClientListenerCrypt implements Runnable, Closeable, Listener{
     } else if(o instanceof MessageWrapper){
       Cipher cryptCipher;
       try {
+        
         cryptCipher = Cipher.getInstance("AES/CTR/NoPadding");
-        System.out.println("AES: "+new String(AESKey.getEncoded()));
-        System.out.println("IV: "+new String(ivParameter));
         SecureRandom secure = new SecureRandom(ivParameter);
         secure.nextBytes(new byte[16]);
-        cryptCipher.init(Cipher.DECRYPT_MODE, AESKey, new IvParameterSpec(ivParameter), secure);
-
-        byte[] decryptReq = cryptCipher.doFinal(((MessageWrapper) o).getContent());
-        System.out.println("AES: "+new String(decryptReq)+" "+((MessageWrapper) o).isMessage());
-        cryptCipher.init(Cipher.ENCRYPT_MODE, AESKey, secure);
-        System.out.println("gegenprobe: "+new String(cryptCipher.doFinal(decryptReq))+" "+((MessageWrapper) o).isMessage());
+        cryptCipher.init(Cipher.DECRYPT_MODE, AESKey, new IvParameterSpec(ivParameter));
+        
+        byte[] decryptReq = (cryptCipher.doFinal(((MessageWrapper) o).getContent()));
         
         if(((MessageWrapper) o).isMessage()){
-          System.out.println("generate request out of byte[]");
           if(connected){
-            System.out.println("generate request out of byte[]");
-            ByteArrayInputStream bis = new ByteArrayInputStream(((MessageWrapper) o).getContent());
-            ObjectInput in = null;
+            
             try {
-              in = new ObjectInputStream(bis);
-              Object req = in.readObject(); 
-              return req;
-            } catch (IOException e) {
-              // TODO Auto-generated catch block
-              e.printStackTrace();
+              return Serializer.deserialize(((MessageWrapper) o).getContent());
             } catch (ClassNotFoundException e) {
               // TODO Auto-generated catch block
               e.printStackTrace();
-            }finally {
-              try {
-                bis.close();
-              } catch (IOException ex) {}
-              try {
-                if (in != null) {
-                  in.close();
-                }
-              } catch (IOException ex) {}
+            } catch (IOException e) {
+              // TODO Auto-generated catch block
+              e.printStackTrace();
             }
-            
           }
         } else {
-          System.out.println(new String(this.proxyChallenge));
-          System.out.println(new String(decryptReq));
-          
-          if(Arrays.equals(this.proxyChallenge, decryptReq)){
+          byte[] decodedReq = Base64.decode(decryptReq);
+          if(Arrays.equals(this.proxyChallenge, decodedReq)){
             connected = true;
           }
 

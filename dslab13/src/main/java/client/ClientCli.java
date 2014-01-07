@@ -72,7 +72,7 @@ public class ClientCli implements IClientCli {
 	@Command
 	public LoginResponse login(String username, String password)
 			throws IOException {
-      psender.send("!login " + username);
+      psender.send("!login " + username+" "+password);
       Object res = psender.receive();
       if(res instanceof String && res.equals("!secureChannelCreated")){
         psender.send(new LoginRequest(username, password));
