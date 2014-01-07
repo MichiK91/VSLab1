@@ -96,8 +96,9 @@ public class ProxyCli implements IProxyCli {
 	public boolean setConfigPublicKey(String username, PublicKey pkey){
 		String path = config.getString("keys.dir");
 		try {
-			PEMWriter out = new PEMWriter(new FileWriter(path + "/proxy.pub.pem"));
+			PEMWriter out = new PEMWriter(new FileWriter(path + "/"+ username+".pub.pem"));
 			out.writeObject(pkey);
+			out.flush();
 			return true;
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
