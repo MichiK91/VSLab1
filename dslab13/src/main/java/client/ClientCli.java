@@ -1,9 +1,12 @@
 package client;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.ObjectOutput;
+import java.io.ObjectOutputStream;
 import java.net.UnknownHostException;
 import java.security.SecureRandom;
 import java.util.concurrent.ExecutorService;
@@ -40,9 +43,11 @@ public class ClientCli implements IClientCli {
 		// register the shell
 		this.shell.register(this);
 		this.threads.execute(this.shell);
-
+		System.out.println("12345");
 		try {
+		  System.out.println("12345");
 			psender = new ProxySenderCrypt(new ProxySenderBase64(new ProxySenderTCP(config)));
+			System.out.println("12345");
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
@@ -56,19 +61,19 @@ public class ClientCli implements IClientCli {
 	@Command
 	public LoginResponse login(String username, String password)
 			throws IOException {
-	  
-    SecureRandom secureRandom = new SecureRandom(); 
-    final byte[] number = new byte[32]; 
-    secureRandom.nextBytes(number);
-    String clientChallenge = new String(secureRandom.generateSeed(32));
-    
-    psender.send("!login " + username + " " + Base64.encode(clientChallenge.getBytes()));
-    Object lres = (LoginResponse) psender.receive();
-    
-		if(((LoginResponse) lres).getType().equals(LoginResponse.Type.SUCCESS)){
-			login = true;
-		}
-		return (LoginResponse) lres;
+      psender.send("!login " + username);
+      Object res = psender.receive();
+      if(res instanceof String && res.equals("!secureChannelCreated")){
+        psender.send(new LoginRequest(username, password));
+        LoginResponse lres = (LoginResponse)psender.receive();
+        if(((LoginResponse) lres).getType().equals(LoginResponse.Type.SUCCESS)){
+          login = true;
+        }
+        return (LoginResponse) lres;
+      }
+      return new LoginResponse(LoginResponse.Type.WRONG_CREDENTIALS);
+           
+          
 	}
 
 	@Override
