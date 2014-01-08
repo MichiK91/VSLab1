@@ -1,6 +1,10 @@
 *	startProxy proxy
 *	startClient client
 *	startFileServer fs1
+*	startFileServer fs2
+*	startFileServer fs3
+*	startFileServer fs4
+
 
 client:	!login alice 12345
 client:	!credits
