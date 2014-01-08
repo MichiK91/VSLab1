@@ -1,5 +1,5 @@
 clients=1
 uploadsPerMin=10
 downloadsPerMin=10
-fileSizeKB=1000
+fileSizeKB=10
 overwriteRatio=0.8
