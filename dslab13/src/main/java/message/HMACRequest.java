@@ -1,15 +1,13 @@
 package message;
 
-import java.io.Serializable;
 import java.util.Arrays;
 
-
 public class HMACRequest implements Request {
-	
+
 	private byte[] hmac;
 	private Request req;
-	
-	public HMACRequest(byte[] hmac, Request req){
+
+	public HMACRequest(byte[] hmac, Request req) {
 		this.hmac = hmac;
 		this.req = req;
 	}
@@ -32,9 +30,7 @@ public class HMACRequest implements Request {
 
 	@Override
 	public String toString() {
-		return "HMACRequest [hmac=" + Arrays.toString(hmac) + ", req=" + req
-				+ "]";
+		return "HMACRequest [hmac=" + Arrays.toString(hmac) + ", req=" + req + "]";
 	}
-	
 
 }

@@ -1,32 +1,32 @@
 package client;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.ObjectOutput;
-import java.io.ObjectOutputStream;
 import java.net.UnknownHostException;
-
-import java.security.SecureRandom;
-
-import java.util.List;
 import java.util.Set;
-
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import org.bouncycastle.util.encoders.Base64;
-
+import message.Response;
+import message.request.BuyRequest;
+import message.request.CreditsRequest;
+import message.request.DownloadFileRequest;
+import message.request.DownloadTicketRequest;
+import message.request.ListRequest;
+import message.request.LoginRequest;
+import message.request.LogoutRequest;
+import message.request.UploadRequest;
+import message.response.DownloadFileResponse;
+import message.response.DownloadTicketResponse;
+import message.response.ListResponse;
+import message.response.LoginResponse;
+import message.response.MessageResponse;
+import model.DownloadTicket;
 import util.Config;
 import cli.Command;
 import cli.Shell;
-
-import message.Response;
-import message.request.*;
-import message.response.*;
-import model.DownloadTicket;
 
 public class ClientCli implements IClientCli {
 
@@ -35,7 +35,7 @@ public class ClientCli implements IClientCli {
 
 	// thread pool
 	private ExecutorService threads = Executors.newCachedThreadPool();
-	private ProxySenderCrypt psender;	
+	private ProxySenderCrypt psender;
 	private ServerSenderTCP ssender;
 
 	private boolean login;
@@ -58,11 +58,11 @@ public class ClientCli implements IClientCli {
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
-			System.err.println("No proxy available. Please press enter to exit.");			
+			System.err.println("No proxy available. Please press enter to exit.");
 			exit();
 		}
 
-		//start RMI
+		// start RMI
 		rmi = new ClientRMI(this);
 		this.shell.register(rmi);
 
@@ -70,21 +70,20 @@ public class ClientCli implements IClientCli {
 
 	@Override
 	@Command
-	public LoginResponse login(String username, String password)
-			throws IOException {
+	public LoginResponse login(String username, String password) throws IOException {
 
 		String keysDir = config.getString("keys.dir");
-		String pathToPrivateKey = keysDir+"/"+username+".pem";
+		String pathToPrivateKey = keysDir + "/" + username + ".pem";
 		File f = new File(pathToPrivateKey);
-		if(!f.exists()){
+		if (!f.exists()) {
 			return new LoginResponse(LoginResponse.Type.NO_PRIVATEKEY_REGISTERED);
 		}
-		psender.send("!login " + username+" "+password);
+		psender.send("!login " + username + " " + password);
 		Object res = psender.receive();
-		if(res instanceof String && res.equals("!secureChannelCreated")){
+		if (res instanceof String && res.equals("!secureChannelCreated")) {
 			psender.send(new LoginRequest(username, password));
-			LoginResponse lres = (LoginResponse)psender.receive();
-			if(((LoginResponse) lres).getType().equals(LoginResponse.Type.SUCCESS)){
+			LoginResponse lres = (LoginResponse) psender.receive();
+			if (((LoginResponse) lres).getType().equals(LoginResponse.Type.SUCCESS)) {
 				this.username = username;
 				login = true;
 			}
@@ -96,7 +95,9 @@ public class ClientCli implements IClientCli {
 	@Override
 	@Command
 	public Response credits() throws IOException {
-		if(!login){return new MessageResponse("Not logged in!");}
+		if (!login) {
+			return new MessageResponse("Not logged in!");
+		}
 		CreditsRequest creq = new CreditsRequest();
 		psender.send(creq);
 		Response res = (Response) psender.receive();
@@ -106,7 +107,9 @@ public class ClientCli implements IClientCli {
 	@Override
 	@Command
 	public Response buy(long credits) throws IOException {
-		if(!login){return new MessageResponse("Not logged in!");}
+		if (!login) {
+			return new MessageResponse("Not logged in!");
+		}
 		BuyRequest breq = new BuyRequest(credits);
 		psender.send(breq);
 		Response res = (Response) psender.receive();
@@ -116,7 +119,9 @@ public class ClientCli implements IClientCli {
 	@Override
 	@Command
 	public Response list() throws IOException {
-		if(!login){return new MessageResponse("Not logged in!");}
+		if (!login) {
+			return new MessageResponse("Not logged in!");
+		}
 		ListRequest lreq = new ListRequest();
 		psender.send(lreq);
 		Response res = (Response) psender.receive();
@@ -126,48 +131,49 @@ public class ClientCli implements IClientCli {
 	@Override
 	@Command
 	public Response download(String filename) throws IOException {
-		if(!login){return new MessageResponse("Not logged in!");}
+		if (!login) {
+			return new MessageResponse("Not logged in!");
+		}
 		DownloadTicketRequest dtreq = new DownloadTicketRequest(filename);
 		psender.send(dtreq);
 		Response res = (Response) psender.receive();
-		
+
 		DownloadTicketResponse dtres;
-		if(res instanceof DownloadTicketResponse){
+		if (res instanceof DownloadTicketResponse) {
 			dtres = (DownloadTicketResponse) res;
-		} else{
+		} else {
 			return (Response) res;
 		}
 
-		//connection to server
+		// connection to server
 		DownloadTicket dt = dtres.getTicket();
 		DownloadFileRequest dfreq = new DownloadFileRequest(dt);
 		ssender = new ServerSenderTCP(dt.getAddress(), dt.getPort());
 
-		
 		Response res1 = (Response) ssender.send(dfreq);
 		DownloadFileResponse dfres;
-		if(res1 instanceof DownloadFileResponse){
+		if (res1 instanceof DownloadFileResponse) {
 			dfres = (DownloadFileResponse) res1;
-		} else{
+		} else {
 			return (Response) res1;
 		}
-		//create file
+		// create file
 		String dir = config.getString("download.dir");
 
-		//first delete existing file
+		// first delete existing file
 		File file = new File(dir);
 		File[] files = file.listFiles();
 
 		for (File f : files) {
 			if (f.isFile()) {
-				if(f.getName().equals(dfres.getTicket().getFilename())){
+				if (f.getName().equals(dfres.getTicket().getFilename())) {
 					f.delete();
 				}
 			}
 		}
-		FileOutputStream out = new FileOutputStream(dir+"/"+dfres.getTicket().getFilename());
+		FileOutputStream out = new FileOutputStream(dir + "/" + dfres.getTicket().getFilename());
 		out.write(dfres.getContent());
-		out.close(); 
+		out.close();
 
 		return dfres;
 	}
@@ -176,7 +182,9 @@ public class ClientCli implements IClientCli {
 	@Command
 	public MessageResponse upload(String filename) throws IOException {
 
-		if(!login){return new MessageResponse("Not logged in!");}
+		if (!login) {
+			return new MessageResponse("Not logged in!");
+		}
 		String dir = config.getString("download.dir");
 
 		File file = new File(dir);
@@ -187,18 +195,18 @@ public class ClientCli implements IClientCli {
 
 		for (File f : files) {
 			if (f.isFile()) {
-				if(f.getName().equals(filename)){
+				if (f.getName().equals(filename)) {
 					foundfile = true;
-					//read content
+					// read content
 					FileInputStream in = new FileInputStream(f);
 					String s = "";
-					while(true){
+					while (true) {
 						int read = in.read();
-						if(read == -1){
+						if (read == -1) {
 							break;
-						} else{
+						} else {
 							char c = (char) read;
-							s += c; 
+							s += c;
 						}
 					}
 					content = s.getBytes();
@@ -206,7 +214,7 @@ public class ClientCli implements IClientCli {
 				}
 			}
 		}
-		if(!foundfile)
+		if (!foundfile)
 			return new MessageResponse("Invalid file name");
 		UploadRequest ureq = new UploadRequest(filename, 1, content);
 		psender.send(ureq);
@@ -217,7 +225,9 @@ public class ClientCli implements IClientCli {
 	@Override
 	@Command
 	public MessageResponse logout() throws IOException {
-		if(!login){return new MessageResponse("Not logged in!");}
+		if (!login) {
+			return new MessageResponse("Not logged in!");
+		}
 		LogoutRequest lreq = new LogoutRequest();
 
 		psender.send(lreq);
@@ -230,11 +240,11 @@ public class ClientCli implements IClientCli {
 	@Override
 	@Command
 	public MessageResponse exit() throws IOException {
-		if(rmi != null)
+		if (rmi != null)
 			rmi.close();
-		if(login)
+		if (login)
 			logout();
-		if(psender != null)
+		if (psender != null)
 			psender.close();
 		threads.shutdownNow();
 		shell.close();
@@ -245,7 +255,7 @@ public class ClientCli implements IClientCli {
 		return this.login;
 	}
 
-	public String getUsername(){
+	public String getUsername() {
 		return this.username;
 	}
 
@@ -256,7 +266,7 @@ public class ClientCli implements IClientCli {
 		return res.getFileNames();
 	}
 
-	public void notify(String filename, long numberOfDownloads){
+	public void notify(String filename, long numberOfDownloads) {
 		try {
 			shell.writeLine("Notification: " + filename + " got downloaded " + numberOfDownloads + " times!");
 		} catch (IOException e) {
@@ -264,6 +274,5 @@ public class ClientCli implements IClientCli {
 			e.printStackTrace();
 		}
 	}
-
 
 }

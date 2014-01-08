@@ -1,23 +1,11 @@
 package server;
 
 import java.io.Closeable;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.security.InvalidKeyException;
-import java.security.Key;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
-
-import org.bouncycastle.util.encoders.Base64;
-import org.bouncycastle.util.encoders.Hex;
 
 import message.HMACRequest;
 import message.HMACResponse;
@@ -33,6 +21,9 @@ import message.response.ListResponse;
 import message.response.MessageResponse;
 import message.response.VersionResponse;
 import model.HMACHandler;
+
+import org.bouncycastle.util.encoders.Base64;
+
 import util.Config;
 
 public class TCPHandler implements Runnable, Closeable {
@@ -58,18 +49,18 @@ public class TCPHandler implements Runnable, Closeable {
 
 				int counter = 3;
 
-				do{
+				do {
 					// recieve object
 					strin = new ObjectInputStream(csocket.getInputStream());
 					Object o = strin.readObject();
 					Request req = null;
 
-					if(o instanceof HMACRequest){
+					if (o instanceof HMACRequest) {
 						HMACRequest hmacreq = (HMACRequest) o;
 						HMACHandler handler = new HMACHandler(config);
 						boolean eq = handler.executeRequest(hmacreq);
 
-						if(eq){
+						if (eq) {
 							Response res = sendRequestToFileServer(hmacreq.getReq());
 
 							HMACResponse hmacres = new HMACResponse(Base64.encode(handler.generateHMAC(res)), res);
@@ -79,14 +70,14 @@ public class TCPHandler implements Runnable, Closeable {
 							break;
 
 						} else {
-							if(counter != 0){
+							if (counter != 0) {
 								MessageResponse res = new MessageResponse("HMAC failed");
 
 								HMACResponse hmacres = new HMACResponse(Base64.encode(handler.generateHMAC(res)), res);
 
 								strout = new ObjectOutputStream(csocket.getOutputStream());
 								strout.writeObject(hmacres);
-							} else{
+							} else {
 								MessageResponse res = new MessageResponse("HMAC aborted");
 
 								HMACResponse hmacres = new HMACResponse(Base64.encode(handler.generateHMAC(res)), res);
@@ -96,7 +87,7 @@ public class TCPHandler implements Runnable, Closeable {
 							}
 							counter--;
 						}
-					} else if(o instanceof Request){
+					} else if (o instanceof Request) {
 						Request reqdown = (Request) o;
 						Response res = sendRequestToFileServer(reqdown);
 
@@ -105,14 +96,12 @@ public class TCPHandler implements Runnable, Closeable {
 						break;
 					}
 
-				}while(true);
-
+				} while (true);
 
 				strout.close();
 				strin.close();
 				csocket.close();
 				ssocket.close();
-
 
 			} catch (IOException e) {
 				System.out.println("FileServer shuts down. No further downloads are allowed.");
@@ -123,7 +112,7 @@ public class TCPHandler implements Runnable, Closeable {
 			}
 		}
 
-	}	
+	}
 
 	private Response sendRequestToFileServer(Request req) throws IOException {
 		if (req.getClass().equals(ListRequest.class)) {

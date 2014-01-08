@@ -1,13 +1,12 @@
 package message;
 
-import java.io.Serializable;
 import java.util.Arrays;
 
 public class HMACResponse implements Response {
 	private byte[] hmac;
 	private Response res;
-	
-	public HMACResponse(byte[] hmac, Response res){
+
+	public HMACResponse(byte[] hmac, Response res) {
 		this.hmac = hmac;
 		this.res = res;
 	}
@@ -30,8 +29,7 @@ public class HMACResponse implements Response {
 
 	@Override
 	public String toString() {
-		return "HMACResponse [hmac=" + Arrays.toString(hmac) + ", res=" + res
-				+ "]";
+		return "HMACResponse [hmac=" + Arrays.toString(hmac) + ", res=" + res + "]";
 	}
-	
+
 }

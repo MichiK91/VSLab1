@@ -2,34 +2,33 @@ package model;
 
 import java.rmi.RemoteException;
 
-import client.ClientRMI;
 import client.IClientRMI;
 
 public class Subscriber {
-	
+
 	private String filename;
 	private long numberOfDownloads;
 	private IClientRMI callbackobject;
-	
-	public Subscriber(){
-		
+
+	public Subscriber() {
+
 	}
-	
-	public Subscriber(String filename, long numberOfDownloads, IClientRMI callbackobject){
+
+	public Subscriber(String filename, long numberOfDownloads, IClientRMI callbackobject) {
 		this.callbackobject = callbackobject;
 		this.filename = filename;
 		this.numberOfDownloads = numberOfDownloads;
 	}
 
-	public void notifyClient(){
+	public void notifyClient() {
 		try {
-			callbackobject.notify(filename,numberOfDownloads);
+			callbackobject.notify(filename, numberOfDownloads);
 		} catch (RemoteException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
-	
+
 	public String getFilename() {
 		return filename;
 	}

@@ -5,42 +5,35 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Serializable;
-import java.net.MalformedURLException;
-import java.rmi.AccessException;
-import java.rmi.Naming;
-import java.rmi.NoSuchObjectException;
-import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.security.PublicKey;
-import java.security.interfaces.RSAPublicKey;
+
+import message.Response;
+import message.response.MessageResponse;
 
 import org.bouncycastle.openssl.PEMReader;
 import org.bouncycastle.openssl.PEMWriter;
 
-import message.Response;
-import message.response.MessageResponse;
-import cli.Command;
-
 import proxy.IProxyRMI;
 import util.Config;
+import cli.Command;
 
-public class ClientRMI extends UnicastRemoteObject implements IClientRMI, Serializable{
+public class ClientRMI extends UnicastRemoteObject implements IClientRMI, Serializable {
 
-	
-	private Config config,cliconfig;
+	private Config config, cliconfig;
 	private ClientCli client;
 	private IProxyRMI stub;
 	private Registry registry;
-	
-	public ClientRMI(ClientCli client) throws RemoteException{
+
+	public ClientRMI(ClientCli client) throws RemoteException {
 		this.config = new Config("mc");
 		this.cliconfig = new Config("client");
 		this.client = client;
-		
-		//init
+
+		// init
 		try {
 			registry = LocateRegistry.getRegistry(getProxyHost(), getProxyRMIPort());
 			stub = (IProxyRMI) registry.lookup(getBindingName());
@@ -48,7 +41,7 @@ public class ClientRMI extends UnicastRemoteObject implements IClientRMI, Serial
 			System.err.println("No proxy available.");
 		}
 	}
-	
+
 	@Override
 	@Command
 	public Response readQuorum() throws RemoteException {
@@ -57,23 +50,23 @@ public class ClientRMI extends UnicastRemoteObject implements IClientRMI, Serial
 
 	@Override
 	@Command
-	public Response writeQuorum() throws RemoteException{
+	public Response writeQuorum() throws RemoteException {
 		return stub.writeQuorum();
 	}
 
 	@Override
 	@Command
-	public Response topThreeDownloads() throws RemoteException{
+	public Response topThreeDownloads() throws RemoteException {
 		return stub.topThreeDownloads();
 	}
 
 	@Override
 	@Command
-	public Response subscribe(String filename, long numberOfDownloads) throws RemoteException{
-		if(!client.isLogin())
+	public Response subscribe(String filename, long numberOfDownloads) throws RemoteException {
+		if (!client.isLogin())
 			return new MessageResponse("You have to log in");
 		try {
-			if (!client.getListOfFiles().contains(filename)) 
+			if (!client.getListOfFiles().contains(filename))
 				return new MessageResponse("File does not exist");
 		} catch (IOException e) {
 			// TODO keine files vorhanden?
@@ -85,10 +78,10 @@ public class ClientRMI extends UnicastRemoteObject implements IClientRMI, Serial
 
 	@Override
 	@Command
-	public Response getProxyPublicKey() throws RemoteException{
+	public Response getProxyPublicKey() throws RemoteException {
 		PublicKey key = stub.getProxyPublicKey();
 		String path = config.getString("keys.dir");
-		
+
 		try {
 			PEMWriter out = new PEMWriter(new FileWriter(path + "/proxy.pub.pem"));
 			out.writeObject(key);
@@ -105,11 +98,11 @@ public class ClientRMI extends UnicastRemoteObject implements IClientRMI, Serial
 
 	@Override
 	@Command
-	public Response setUserPublicKey(String username) throws RemoteException{
+	public Response setUserPublicKey(String username) throws RemoteException {
 		String path = cliconfig.getString("keys.dir");
 		PublicKey pkey = null;
 		try {
-			PEMReader in = new PEMReader(new FileReader(path + "/"+ username.toLowerCase() +".pub.pem"));
+			PEMReader in = new PEMReader(new FileReader(path + "/" + username.toLowerCase() + ".pub.pem"));
 			pkey = (PublicKey) in.readObject();
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
@@ -119,16 +112,16 @@ public class ClientRMI extends UnicastRemoteObject implements IClientRMI, Serial
 			e.printStackTrace();
 		}
 		return stub.setUserPublicKey(username, pkey);
-		//return new MessageResponse("Successfully transmitted public key of user: " + username);
+		// return new MessageResponse("Successfully transmitted public key of user: " + username);
 	}
-	
+
 	@Command
-	public Response test(){
+	public Response test() {
 		String path = cliconfig.getString("key.dir");
 		try {
-			PEMReader in = new PEMReader(new FileReader(path + "/"+ "alice" +".pub.pem"));
+			PEMReader in = new PEMReader(new FileReader(path + "/" + "alice" + ".pub.pem"));
 			PublicKey pkey = (PublicKey) in.readObject();
-			return new MessageResponse(""+pkey);
+			return new MessageResponse("" + pkey);
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -136,36 +129,36 @@ public class ClientRMI extends UnicastRemoteObject implements IClientRMI, Serial
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		return null;		
+		return null;
 	}
-	
-	public void notify(String filename, long numberOfDownloads) throws RemoteException{
-		client.notify(filename,numberOfDownloads);
+
+	public void notify(String filename, long numberOfDownloads) throws RemoteException {
+		client.notify(filename, numberOfDownloads);
 	}
-	
-	public void close(){
+
+	public void close() {
 		try {
 			UnicastRemoteObject.unexportObject(this, false);
-		}  catch (RemoteException e) {
+		} catch (RemoteException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
-	
-	public String getBindingName(){
+
+	public String getBindingName() {
 		return config.getString("binding.name");
 	}
-	
-	public String getProxyHost(){
+
+	public String getProxyHost() {
 		return config.getString("proxy.host");
 	}
-	
-	public int getProxyRMIPort(){
+
+	public int getProxyRMIPort() {
 		return config.getInt("proxy.rmi.port");
 	}
-	
-	public String getKeysDir(){
+
+	public String getKeysDir() {
 		return config.getString("keys.dir");
 	}
-	
+
 }

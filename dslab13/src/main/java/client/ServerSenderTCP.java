@@ -7,7 +7,6 @@ import java.io.ObjectOutputStream;
 import java.net.InetAddress;
 import java.net.Socket;
 
-import message.Request;
 import message.Response;
 
 public class ServerSenderTCP implements Closeable {
@@ -16,28 +15,27 @@ public class ServerSenderTCP implements Closeable {
 	private ObjectInputStream strin;
 	private InetAddress addr;
 	private int port;
-	
-	
-	public ServerSenderTCP(InetAddress addr,int port){
+
+	public ServerSenderTCP(InetAddress addr, int port) {
 		this.addr = addr;
 		this.port = port;
-		
+
 	}
-	
-	private void connect(){
+
+	private void connect() {
 		try {
 			socket = new Socket(addr, port);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 	}
-	
-	public Response send(Object req) throws IOException{
+
+	public Response send(Object req) throws IOException {
 		connect();
-		//send request
+		// send request
 		strout = new ObjectOutputStream(socket.getOutputStream());
-		strout.writeObject(req); 
-		//get response
+		strout.writeObject(req);
+		// get response
 		strin = new ObjectInputStream(socket.getInputStream());
 		Response res = null;
 		try {
@@ -56,6 +54,4 @@ public class ServerSenderTCP implements Closeable {
 		socket.close();
 	}
 
-  
-	
 }
