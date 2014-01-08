@@ -1,0 +1,8 @@
+*	startProxy proxy
+*	startClient client
+*	startFileServer fs1
+
+client: !writeQuorum
+fs1:	!exit
+client: !exit
+proxy:	!exit

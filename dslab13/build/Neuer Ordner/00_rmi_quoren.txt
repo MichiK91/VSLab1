@@ -1,0 +1,25 @@
+*	startFileServer fs1
+*	startFileServer fs2
+*	startFileServer fs3
+*	startFileServer fs4
+*	startFileServer fs5
+*	startFileServer fs6
+*	startFileServer fs7
+*	startProxy proxy
+*	startClient client
+
+
+client: !login alice 12345
+client: !upload upload.txt
+proxy:  !fileservers
+client: !readQuorum
+client: !writeQuorum
+fs7:	!exit
+fs6:	!exit
+fs5:	!exit
+fs4:	!exit
+fs3:	!exit
+fs2:	!exit
+fs1:	!exit
+client: !exit
+proxy:	!exit

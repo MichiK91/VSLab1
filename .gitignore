@@ -6,3 +6,6 @@ target/*
 
 # Classfiles for the custom linting
 *.class
+
+# Downloadfiles
+files/*
