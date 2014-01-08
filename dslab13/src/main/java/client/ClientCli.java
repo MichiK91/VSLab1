@@ -72,6 +72,13 @@ public class ClientCli implements IClientCli {
 	@Command
 	public LoginResponse login(String username, String password)
 			throws IOException {
+	    
+	    String keysDir = config.getString("keys.dir");
+  	  String pathToPrivateKey = keysDir+"/"+username+".pem";
+      File f = new File(pathToPrivateKey);
+      if(!f.exists()){
+        return new LoginResponse(LoginResponse.Type.WRONG_CREDENTIALS);
+      }
       psender.send("!login " + username+" "+password);
       Object res = psender.receive();
       if(res instanceof String && res.equals("!secureChannelCreated")){
