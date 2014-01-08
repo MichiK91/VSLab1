@@ -71,7 +71,10 @@ public class ClientListenerCrypt implements Runnable, Closeable, Listener{
       Object o = this.receive();
       
       if(o==null){
-        System.out.println("Client "+user+" disconnected");
+        if(user!=null){
+          System.out.println("Client "+user+" disconnected");
+        }
+        
         try {
           proxy.logout();
         } catch (IOException e) {
