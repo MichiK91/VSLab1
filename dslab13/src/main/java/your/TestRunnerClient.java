@@ -105,8 +105,8 @@ public class TestRunnerClient implements Runnable {
             final String newFile = ""+new Random().nextLong();
             out = new FileOutputStream(dir + "/" +newFile);
             out.write(filedata);
-            out.close();
             component.getIn().addLine("!upload "+newFile);
+            out.close();
           } catch (FileNotFoundException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
