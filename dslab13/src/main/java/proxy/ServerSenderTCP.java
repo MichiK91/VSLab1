@@ -22,12 +22,15 @@ import org.bouncycastle.util.encoders.Hex;
 import util.Config;
 
 
+import message.HMACRequest;
+import message.HMACResponse;
 import message.Request;
 import message.Response;
 import message.request.ListRequest;
 import message.request.UploadRequest;
 import message.response.ListResponse;
 import message.response.MessageResponse;
+import model.HMACHandler;
 
 
 public class ServerSenderTCP implements Closeable {
@@ -46,50 +49,31 @@ public class ServerSenderTCP implements Closeable {
 		}
 
 		byte[] content = new byte[] {(byte)0x41, (byte)0x61, (byte)0x61, (byte)0x61, (byte)0x61};
+		UploadRequest req = new UploadRequest("test.txt", 0, content); 
+		ListRequest list = new ListRequest();
+
+		
+
+		try {
+			Response res =  ss.send(list);
+			System.out.println(res);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 
 
 		//create key. should be in proxyimpl @upload
-		Config c = new Config("proxy");
-		byte[] keyBytes = new byte[1024];
-		String pathToSecretKey = c.getString("hmac.key");
-		FileInputStream fis;
-		try {
-			fis = new FileInputStream(pathToSecretKey);
-
-			fis.read(keyBytes);
-			fis.close();
-		} catch (FileNotFoundException e1) {
-			e1.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		byte[] input = Hex.decode(keyBytes);
-
-		Key key = new SecretKeySpec(input,"HmacSHA256");
-
-		Mac hMac = null;
-		try {
-			hMac = Mac.getInstance("HmacSHA256");
-			hMac.init(key);
-		} catch (NoSuchAlgorithmException e1) {
-			e1.printStackTrace();
-		} catch (InvalidKeyException e) {
-			e.printStackTrace();
-		} 
-
-		hMac.update(content);
-		byte[] hash = hMac.doFinal();
-
-		byte[] base64Message = Base64.encode(hash);
-
-		String send = new String(base64Message) + " !upload " + "up.txt " + "0 " + new String(content);
-		System.out.println(send);
-
-		try {
-			System.out.println(ss.send(send));
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+		//		byte[] base64Message = generateHMAC(content);
+		//
+		//		String send = new String(base64Message) + " !upload " + "up.txt " + "0 " + new String(content);
+		//		System.out.println(send);
+		//
+		//		try {
+		//			System.out.println(ss.send(send));
+		//		} catch (IOException e) {
+		//			e.printStackTrace();
+		//		}
 	}
 
 	public ServerSenderTCP(InetAddress addr,int port){
@@ -112,36 +96,68 @@ public class ServerSenderTCP implements Closeable {
 		if(!connect()){
 			return null;
 		}
+		
+		HMACHandler handler = new HMACHandler(new Config("proxy"));
 
-		Response res = null;
+		byte[] base64Message = Base64.encode(handler.generateHMAC((Request) req));
+
+		HMACRequest hmacreq = new HMACRequest(base64Message, (Request) req);
+		
+		HMACResponse res = null;
+
 		do{
 			//send request
 			strout = new ObjectOutputStream(socket.getOutputStream());
-			strout.writeObject(req); 
+			strout.writeObject(hmacreq); 
 			//get response
-			strin = new ObjectInputStream(socket.getInputStream());
-			try {
-				res = (Response) strin.readObject();
-			} catch (ClassNotFoundException e) {
-				e.printStackTrace();
-			}
+			int counter = 3;
+			boolean br = false;
+//			do{
+				
+				strin = new ObjectInputStream(socket.getInputStream());
+				try {
+					res = (HMACResponse) strin.readObject();
+				} catch (ClassNotFoundException e) {
+					e.printStackTrace();
+				}
+				boolean eq = handler.executeResponse(res);
+//				if(eq){
+//					break;
+//				}
+//				else{
+//					if(counter == 0){
+//						br = true;
+//						break;
+//					} else{
+//						System.out.println("FAILES");
+//					}
+//					counter--;
+//				}
+//
+//			}while(true);
 
-			if (res.getClass().equals(MessageResponse.class)) {
-				String s = ((MessageResponse)res).getMessage();
-				if(!s.equals("Failed")){
+			if(br){
+				break;
+			}
+			if (res.getRes().getClass().equals(MessageResponse.class)) {
+				String s = res.getRes().toString();
+				if(s.equals("HMAC failed")){
+					System.out.println(s);
+				}
+				else{
+					System.out.println(s);
 					break;
-					
-				} else {
-					System.out.println(res);
 				}
 			} else{
 				break;
 			}
-		}while(true);
+		}
+		while(true);
 
 		close();
-		return res;
+		return res.getRes();
 	}
+
 
 	@Override
 	public void close() throws IOException {
