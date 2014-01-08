@@ -44,8 +44,10 @@ public class TestRunnerClient implements Runnable {
 		this.number=number;
 	}
 
+	Object test = new Object();
 	@Override
 	public void run() {
+	  
 	  
 	  component.getIn().addLine("!login alice"+number+" 12345");
 
@@ -53,7 +55,9 @@ public class TestRunnerClient implements Runnable {
     downloadTimer = new TimerTask() {
 		@Override
 			public void run() {
-				component.getIn().addLine("!download short.txt");
+  		  synchronized(test){
+  				component.getIn().addLine("!download short.txt");
+  		  }
 			}
 		};
 		timer = new Timer();
@@ -87,34 +91,34 @@ public class TestRunnerClient implements Runnable {
 		uploadTimer = new TimerTask() {
       @Override
       public void run() {
-        
-        Random random = new Random();
-        if(random.nextDouble()<ratio){
+        synchronized(test){
+          Random random = new Random();
+          if(random.nextDouble()<ratio){
+            
+            component.getIn().addLine("!upload "+existingFile);
           
-          component.getIn().addLine("!upload "+existingFile);
-        
-        } else {
-          
-          byte[] filedata = new byte[(1024 * size)];
-          new Random().nextBytes(filedata);
-          String dir = clientConfig.getString("download.dir");
-          File file = new File(dir);
-
-          FileOutputStream out;
-          try {
-            final String newFile = ""+new Random().nextLong();
-            out = new FileOutputStream(dir + "/" +newFile);
-            out.write(filedata);
-            component.getIn().addLine("!upload "+newFile);
-            out.close();
-          } catch (FileNotFoundException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-          } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+          } else {
+            
+            byte[] filedata = new byte[(1024 * size)];
+            new Random().nextBytes(filedata);
+            String dir = clientConfig.getString("download.dir");
+            File file = new File(dir);
+  
+            FileOutputStream out;
+            try {
+              final String newFile = ""+new Random().nextLong();
+              out = new FileOutputStream(dir + "/" +newFile);
+              out.write(filedata);
+              component.getIn().addLine("!upload "+newFile);
+              out.close();
+            } catch (FileNotFoundException e) {
+              // TODO Auto-generated catch block
+              e.printStackTrace();
+            } catch (IOException e) {
+              // TODO Auto-generated catch block
+              e.printStackTrace();
+            }
           }
-          
         }
       }
     };
