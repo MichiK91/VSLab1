@@ -3,6 +3,7 @@ package client;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
@@ -87,6 +88,7 @@ public class ProxySenderCrypt implements Sender {
         if(parts.length==3){
           
           String pathToPrivateKey = keysDir+"/"+parts[1]+".pem";
+
           PEMReader pemReader = null;
           try {
             final String pw = parts[2];
@@ -167,7 +169,6 @@ public class ProxySenderCrypt implements Sender {
     } else if (req instanceof Request){
       try {
         cryptCipher = Cipher.getInstance("AES/CTR/NoPadding");
-        System.out.println(req);
         byte[] yourBytesReq = Serializer.serialize(req);
         cryptCipher.init(Cipher.ENCRYPT_MODE, AESKey, new IvParameterSpec(ivParameter));
         byte[] encryptReq = cryptCipher.doFinal(yourBytesReq);
@@ -199,9 +200,6 @@ public class ProxySenderCrypt implements Sender {
 
           cryptCipher.init(Cipher.ENCRYPT_MODE, AESKey, new IvParameterSpec(ivParameter));
           byte[] encryptReq = cryptCipher.doFinal(((MessageWrapper) req).getContent());
-          
-          System.out.println(((MessageWrapper) req).isMessage());
-          System.out.println("encrypted:"+new String(encryptReq));
           
           proxySender.send(new MessageWrapper(encryptReq, ((MessageWrapper) req).isMessage()));
         
@@ -247,14 +245,12 @@ public class ProxySenderCrypt implements Sender {
         byte[] decryptReq = cryptCipher.doFinal((byte[])req);
         String answer = new String(decryptReq);
         String[] answerSplit = answer.split(" ");
-        System.out.println("gotten challenge: "+new String(Base64.decode(answerSplit[1].getBytes())));
-        System.out.println("challenge: "+new String(clientChallenge));
+        
         if(answerSplit.length == 5 && answerSplit[0].equals("!ok") && Arrays.equals(Base64.decode(answerSplit[1].getBytes()), clientChallenge)){
           
           byte[] decodedAES = Base64.decode(answerSplit[3].getBytes());
           AESKey = new SecretKeySpec(decodedAES, 0, decodedAES.length, "AES");
           ivParameter = Base64.decode(answerSplit[4].getBytes());
-          System.out.println("proxychallenge: "+new String(Base64.decode(answerSplit[2].getBytes())));
           this.send(new MessageWrapper(answerSplit[2].getBytes(),false));
           return "!secureChannelCreated";
 
@@ -279,20 +275,18 @@ public class ProxySenderCrypt implements Sender {
         e.printStackTrace();
       }
     } else if(req instanceof MessageWrapper){
-      System.out.println("1"+((MessageWrapper) req).isMessage());
       Cipher cryptCipher;
       try {
         cryptCipher = Cipher.getInstance("AES/CTR/NoPadding");
         SecureRandom secure = new SecureRandom(ivParameter);
         secure.nextBytes(new byte[16]);
         cryptCipher.init(Cipher.DECRYPT_MODE, AESKey, new IvParameterSpec(ivParameter));
-        System.out.println("2"+((MessageWrapper) req).isMessage());
         byte[] decryptReq = cryptCipher.doFinal(((MessageWrapper)req).getContent());
-        System.out.println("3"+((MessageWrapper) req).isMessage());
         if(((MessageWrapper) req).isMessage()){
           try {
             Object o = Serializer.deserialize(decryptReq);
             if(o instanceof Response){
+              System.out.println("Message received");
               return o;
             }
           } catch (ClassNotFoundException e1) {

@@ -65,7 +65,6 @@ public class ProxySenderTCP implements Closeable, Sender {
       System.out.println("Proxy has gone offline");
       return null;
     }
-    System.out.println("res");
     return res;
   }
   
