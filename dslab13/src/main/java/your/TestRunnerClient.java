@@ -5,7 +5,6 @@ import java.util.TimerTask;
 
 import util.CliComponent;
 import util.Config;
-import cli.Shell;
 import client.ClientCli;
 
 public class TestRunnerClient implements Runnable {
@@ -15,7 +14,6 @@ public class TestRunnerClient implements Runnable {
 	private int uploads;
 	private int size;
 	private double ratio;
-	private Shell shell;
 	private Config config;
 	private TimerTask tt;
 	private Timer timer;
@@ -31,7 +29,6 @@ public class TestRunnerClient implements Runnable {
 		this.uploads = config.getInt("uploadsPerMin");
 		this.size = config.getInt("fileSizeKB");
 		this.ratio = Double.parseDouble(config.getString("overwriteRatio"));
-		this.shell = shell;
 	}
 
 	@Override
@@ -46,5 +43,9 @@ public class TestRunnerClient implements Runnable {
 		};
 		timer = new Timer();
 		timer.schedule(tt, 0, 50000000);
+	}
+
+	public void exit() {
+		component.getIn().addLine("!exit");
 	}
 }
