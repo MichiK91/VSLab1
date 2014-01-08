@@ -52,9 +52,10 @@ public class MultiThreadingTest {
 			TestRunnerFileServer runner = new TestRunnerFileServer((FileServerCli) componentFS, component);
 			serverList.add(runner);
 			threads.execute(runner);
+			System.out.println("f");
 		}
 		
-		for (int i = 0; i < clients; i++) {
+		for (int i = 1; i <= clients; i++) {
 
 			in = new TestInputStream();
 
@@ -67,7 +68,13 @@ public class MultiThreadingTest {
 			clientList.add(runner);
 			threads.execute(runner);
 		}
-		exitAll();
+		try {
+			Thread.sleep(2000);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		//exitAll();
 	}
 
 	private static void exitAll() {
