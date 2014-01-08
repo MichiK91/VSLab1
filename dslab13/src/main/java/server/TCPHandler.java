@@ -19,6 +19,8 @@ import javax.crypto.spec.SecretKeySpec;
 import org.bouncycastle.util.encoders.Base64;
 import org.bouncycastle.util.encoders.Hex;
 
+import message.HMACRequest;
+import message.HMACResponse;
 import message.Request;
 import message.Response;
 import message.request.DownloadFileRequest;
@@ -30,6 +32,7 @@ import message.response.InfoResponse;
 import message.response.ListResponse;
 import message.response.MessageResponse;
 import message.response.VersionResponse;
+import model.HMACHandler;
 import util.Config;
 
 public class TCPHandler implements Runnable, Closeable {
@@ -53,61 +56,62 @@ public class TCPHandler implements Runnable, Closeable {
 				ssocket = new ServerSocket(config.getInt("tcp.port"));
 				csocket = ssocket.accept();
 
-				boolean success = false;
 				int counter = 3;
-				
+
 				do{
 					// recieve object
 					strin = new ObjectInputStream(csocket.getInputStream());
 					Object o = strin.readObject();
 					Request req = null;
-					if (o instanceof Request) {
-						req = (Request) o;
-						// execute object
-						Response res = sendRequestToFileServer(req);
 
-						// send object
-						strout = new ObjectOutputStream(csocket.getOutputStream());
-						strout.writeObject(res);
-						break;
+					if(o instanceof HMACRequest){
+						HMACRequest hmacreq = (HMACRequest) o;
+						HMACHandler handler = new HMACHandler(config);
+						boolean eq = handler.executeRequest(hmacreq);
 
-					} else if(o instanceof String){
-						//Upload with HMAC
-						String s = (String) o;
+						if(eq){
+//							int innercounter = 3;
+//							do{
+								Response res = sendRequestToFileServer(hmacreq.getReq());
 
-						String[] r = s.split(" ");
+								HMACResponse hmacres = new HMACResponse(Base64.encode(handler.generateHMAC(res)), res);
 
-						String filename = r[2];
-						int version = Integer.parseInt(r[3]);
-						byte[] content = r[4].getBytes();
-
-						success = hmacEquals(r);
-
-						if(success){
-							// execute object
-							Response res = sendRequestToFileServer(new UploadRequest(filename, version, content));
-
-							strout = new ObjectOutputStream(csocket.getOutputStream());
-							strout.writeObject(res);
+								strout = new ObjectOutputStream(csocket.getOutputStream());
+								strout.writeObject(hmacres);
+//								innercounter--;
+//							}while(innercounter >= 0);
+							break;
 
 						} else {
-							
-							if(counter == 0){
+							if(counter != 0){
+								MessageResponse res = new MessageResponse("HMAC failed");
+
+								HMACResponse hmacres = new HMACResponse(Base64.encode(handler.generateHMAC(res)), res);
+
 								strout = new ObjectOutputStream(csocket.getOutputStream());
-								strout.writeObject(new MessageResponse("Upload is aborted"));
+								strout.writeObject(hmacres);
+							} else{
+								MessageResponse res = new MessageResponse("HMAC aborted");
+
+								HMACResponse hmacres = new HMACResponse(Base64.encode(handler.generateHMAC(res)), res);
+								strout = new ObjectOutputStream(csocket.getOutputStream());
+								strout.writeObject(hmacres);
 								break;
-							} else {
-								strout = new ObjectOutputStream(csocket.getOutputStream());
-								strout.writeObject(new MessageResponse("Failed"));
 							}
 							counter--;
 						}
+					} else if(o instanceof Request){
+						Request reqdown = (Request) o;
+						Response res = sendRequestToFileServer(reqdown);
 
-
+						strout = new ObjectOutputStream(csocket.getOutputStream());
+						strout.writeObject(res);
+						break;
 					}
-				}
-				while(success);
-				
+					
+				}while(true);
+
+
 				strout.close();
 				strin.close();
 				csocket.close();
@@ -116,54 +120,14 @@ public class TCPHandler implements Runnable, Closeable {
 
 			} catch (IOException e) {
 				System.out.println("FileServer shuts down. No further downloads are allowed.");
+				e.printStackTrace();
 				break;
 			} catch (ClassNotFoundException e1) {
 				e1.printStackTrace();
 			}
 		}
 
-	}
-
-	private boolean hmacEquals(String[] r){
-
-		byte[] bhash = r[0].getBytes();
-		byte[] content = r[4].getBytes();
-
-		
-		byte[] keyBytes = new byte[1024];
-		String pathToSecretKey = config.getString("hmac.key");
-		FileInputStream fis;
-		try {
-			fis = new FileInputStream(pathToSecretKey);
-
-			fis.read(keyBytes);
-			fis.close();
-		} catch (FileNotFoundException e1) {
-			e1.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-
-		byte[] input = Hex.decode(keyBytes);
-		Key key = new SecretKeySpec(input,"HmacSHA256");
-
-
-		Mac hMac = null;
-		try {
-			hMac = Mac.getInstance("HmacSHA256");
-			hMac.init(key);
-		} catch (NoSuchAlgorithmException e1) {
-			e1.printStackTrace();
-		} catch (InvalidKeyException e) {
-			e.printStackTrace();
-		} 
-
-		hMac.update(content);
-		byte[] phash = hMac.doFinal();
-
-		boolean b = MessageDigest.isEqual(Base64.encode(phash), bhash);
-		return b;
-	}
+	}	
 
 	private Response sendRequestToFileServer(Request req) throws IOException {
 		if (req.getClass().equals(ListRequest.class)) {

@@ -250,7 +250,7 @@ public class ProxyCli implements IProxyCli {
 
 	public boolean checkOnline() {
 		setServerList();
-		for (FileServerInfo f : servers) {
+		for (FileServerInfo f : getServerList()) {
 			if (f.isOnline()) {
 				return true;
 			}
@@ -267,7 +267,7 @@ public class ProxyCli implements IProxyCli {
 			}
 		}
 		int ret = (int) Math.ceil(onlineServer / 2d);
-
+		
 		if (onlineServer == 1) {
 			return 1;
 		} else if (onlineServer == 3) {
@@ -287,7 +287,9 @@ public class ProxyCli implements IProxyCli {
 		}
 		int ret = (int) (Math.ceil(onlineServer / 2d) + 1d);
 
-		if (onlineServer == 1) {
+		if(onlineServer == 0){
+			return 0;
+		} else if (onlineServer == 1) {
 			return 1;
 		} else if (onlineServer == 3) {
 			return 2;
