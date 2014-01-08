@@ -43,10 +43,8 @@ public class ClientAccept implements Runnable{
 	  readPrivateKey();
 		while(true){
 			try {
-			  System.out.println("beginrunproxy");
 				cl = new ClientListenerCrypt(new ClientListenerBase64(new ClientListenerTCP()),proxycli, privateKey);
 				cl.getListener().getListener().setSocket(s.accept());
-				System.out.println("acceptedrunproxy");
 				list.add(cl);
 				threads.execute(cl);
 			} catch (Exception e) {
@@ -83,7 +81,6 @@ public class ClientAccept implements Runnable{
         
       });
       KeyPair keyPair = (KeyPair) in.readObject(); 
-      System.out.println("keypair read");
       privateKey = keyPair.getPrivate();
     } catch (IOException e1) {
       // TODO Auto-generated catch block
