@@ -7,6 +7,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 
+import message.MessageWrapper;
 import message.Request;
 import message.Response;
 import message.request.BuyRequest;
@@ -24,11 +25,8 @@ public class ClientListenerTCP implements Closeable, Listener {
 	private ObjectInputStream strin;
 	private ObjectOutputStream strout;
 
-	private boolean run;
-
 	public ClientListenerTCP() {
-		this.run = false;
-		
+
 	}
 
 	
@@ -54,16 +52,29 @@ public class ClientListenerTCP implements Closeable, Listener {
   public Object receive() {
     try {
       Object o = strin.readObject();
-      return o;
+      System.out.println("got object from type: "+o.getClass());
+      if(o instanceof MessageWrapper){
+        System.out.println(((MessageWrapper) o).isMessage());
+        System.out.println("received");
+      }
+      if(o instanceof byte[] || o instanceof MessageWrapper){
+        System.out.println("return object from type: "+o.getClass());
+        return o;
+      }
     } catch (ClassNotFoundException e)  {
       // TODO Auto-generated catch block
       e.printStackTrace();
     }catch (IOException e)  {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
+      try {
+        System.out.println("close TCPListener");
+        close();
+      } catch (IOException e1) {
+        // TODO Auto-generated catch block
+        e1.printStackTrace();
+      }
     }
-    System.out.println("null received");
-    return null;
+    System.out.println("encoded:");
+    return null;//unreachable
   }
   
   public ObjectInputStream getInputStream(){

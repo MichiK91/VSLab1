@@ -34,6 +34,7 @@ import message.MessageWrapper;
 import message.Request;
 import message.Response;
 import message.response.LoginResponse;
+import message.response.MessageResponse;
 
 import org.bouncycastle.openssl.PEMReader;
 import org.bouncycastle.openssl.PasswordFinder;
@@ -166,15 +167,9 @@ public class ProxySenderCrypt implements Sender {
     } else if (req instanceof Request){
       try {
         cryptCipher = Cipher.getInstance("AES/CTR/NoPadding");
-        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        ObjectOutput out = null;
-
-        out = new ObjectOutputStream(bos);   
-        out.writeObject(req);
-        byte[] yourBytesReq = bos.toByteArray();
-        SecureRandom secure = new SecureRandom(ivParameter);
-        secure.nextBytes(new byte[16]);
-        cryptCipher.init(Cipher.ENCRYPT_MODE, AESKey, secure);
+        System.out.println(req);
+        byte[] yourBytesReq = Serializer.serialize(req);
+        cryptCipher.init(Cipher.ENCRYPT_MODE, AESKey, new IvParameterSpec(ivParameter));
         byte[] encryptReq = cryptCipher.doFinal(yourBytesReq);
         
         proxySender.send(new MessageWrapper(encryptReq, true));
@@ -194,6 +189,9 @@ public class ProxySenderCrypt implements Sender {
         } catch (BadPaddingException e) {
           // TODO Auto-generated catch block
           e.printStackTrace();
+        } catch (InvalidAlgorithmParameterException e) {
+          // TODO Auto-generated catch block
+          e.printStackTrace();
         }
       }else if(req instanceof MessageWrapper){
         try {
@@ -201,7 +199,10 @@ public class ProxySenderCrypt implements Sender {
 
           cryptCipher.init(Cipher.ENCRYPT_MODE, AESKey, new IvParameterSpec(ivParameter));
           byte[] encryptReq = cryptCipher.doFinal(((MessageWrapper) req).getContent());
-
+          
+          System.out.println(((MessageWrapper) req).isMessage());
+          System.out.println("encrypted:"+new String(encryptReq));
+          
           proxySender.send(new MessageWrapper(encryptReq, ((MessageWrapper) req).isMessage()));
         
         } catch (NoSuchAlgorithmException e) {
@@ -284,7 +285,7 @@ public class ProxySenderCrypt implements Sender {
         cryptCipher = Cipher.getInstance("AES/CTR/NoPadding");
         SecureRandom secure = new SecureRandom(ivParameter);
         secure.nextBytes(new byte[16]);
-        cryptCipher.init(Cipher.DECRYPT_MODE, privateKey, new IvParameterSpec(ivParameter), secure);
+        cryptCipher.init(Cipher.DECRYPT_MODE, AESKey, new IvParameterSpec(ivParameter));
         System.out.println("2"+((MessageWrapper) req).isMessage());
         byte[] decryptReq = cryptCipher.doFinal(((MessageWrapper)req).getContent());
         System.out.println("3"+((MessageWrapper) req).isMessage());
@@ -326,7 +327,7 @@ public class ProxySenderCrypt implements Sender {
         e1.printStackTrace();
       }
     }
-    return new LoginResponse(LoginResponse.Type.WRONG_CREDENTIALS);
+    return new MessageResponse("error occurred");
   }
 
 }
