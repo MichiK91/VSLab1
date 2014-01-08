@@ -44,6 +44,7 @@ public class TestRunnerClient implements Runnable {
 	}
 
 	Object test = new Object();
+
 	@Override
 	public void run() {
 
@@ -94,7 +95,6 @@ public class TestRunnerClient implements Runnable {
 				Random random = new Random();
 				synchronized (client) {
 					if (random.nextDouble() < ratio) {
-
 						component.getIn().addLine("!upload " + existingFile);
 
 					} else {
