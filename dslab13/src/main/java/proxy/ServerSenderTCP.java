@@ -40,29 +40,29 @@ public class ServerSenderTCP implements Closeable {
 	private InetAddress addr;
 	private int port;
 
-	public static void main (String [] args){
-		ServerSenderTCP ss = null;
-		try {
-			ss = new ServerSenderTCP(InetAddress.getLocalHost(), 14342);
-		} catch (UnknownHostException e) {
-			e.printStackTrace();
-		}
-
-		byte[] content = new byte[] {(byte)0x41, (byte)0x61, (byte)0x61, (byte)0x61, (byte)0x61};
-		UploadRequest req = new UploadRequest("test.txt", 0, content); 
-		ListRequest list = new ListRequest();
-		
-
-		
-
-		try {
-			Response res =  ss.send(list);
-			System.out.println(res);
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-
+//	public static void main (String [] args){
+//		ServerSenderTCP ss = null;
+//		try {
+//			ss = new ServerSenderTCP(InetAddress.getLocalHost(), 14342);
+//		} catch (UnknownHostException e) {
+//			e.printStackTrace();
+//		}
+//
+//		byte[] content = new byte[] {(byte)0x41, (byte)0x61, (byte)0x61, (byte)0x61, (byte)0x61};
+//		UploadRequest req = new UploadRequest("test.txt", 0, content); 
+//		ListRequest list = new ListRequest();
+//		
+//
+//		
+//
+//		try {
+//			Response res =  ss.send(list);
+//			System.out.println(res);
+//		} catch (IOException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
+//
 
 		//create key. should be in proxyimpl @upload
 		//		byte[] base64Message = generateHMAC(content);
@@ -75,7 +75,7 @@ public class ServerSenderTCP implements Closeable {
 		//		} catch (IOException e) {
 		//			e.printStackTrace();
 		//		}
-	}
+//	}
 
 	public ServerSenderTCP(InetAddress addr,int port){
 		this.addr = addr;
@@ -146,7 +146,7 @@ public class ServerSenderTCP implements Closeable {
 					System.out.println(s);
 				}
 				else{
-					System.out.println(s);
+					//System.out.println(s);
 					break;
 				}
 			} else{

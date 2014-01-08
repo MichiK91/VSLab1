@@ -100,7 +100,15 @@ public class TCPHandler implements Runnable, Closeable {
 							}
 							counter--;
 						}
+					} else if(o instanceof Request){
+						Request reqdown = (Request) o;
+						Response res = sendRequestToFileServer(reqdown);
+
+						strout = new ObjectOutputStream(csocket.getOutputStream());
+						strout.writeObject(res);
+						break;
 					}
+					
 				}while(true);
 
 
