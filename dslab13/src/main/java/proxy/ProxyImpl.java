@@ -88,8 +88,9 @@ public class ProxyImpl implements IProxy, Closeable {
 					} else if (u.getName().equals(user)) {
 						// change online status
 						creditscount = u.getCredits();
-						proxycli.removeUser(u);
-						proxycli.addUser(new UserInfo(user, creditscount, true));
+						u.setOnline(true);
+						// proxycli.removeUser(u);
+						// proxycli.addUser(new UserInfo(user, creditscount, true));
 						break;
 					}
 				}
@@ -157,7 +158,7 @@ public class ProxyImpl implements IProxy, Closeable {
 		// get latest Version
 		int version = getLatestVersion(filename).getVersion();
 
-		if(version == -1){
+		if (version == -1) {
 			return new MessageResponse("No more servers are online");
 		}
 
@@ -260,11 +261,11 @@ public class ProxyImpl implements IProxy, Closeable {
 		for (UserInfo u : proxycli.getUserList()) {
 			if (user.equals(u.getName())) {
 				creditscount += 2 * (request.getContent().length);
-				proxycli.removeUser(u);
-				proxycli.addUser(new UserInfo(user, creditscount, true));
+				// proxycli.removeUser(u);
+				u.setCredits(creditscount);
+				// addUser(new UserInfo(user, creditscount, true));
 			}
 		}
-
 		return ures;
 	}
 
@@ -274,8 +275,9 @@ public class ProxyImpl implements IProxy, Closeable {
 			return new MessageResponse("You have to log in");
 		for (UserInfo u : proxycli.getUserList()) {
 			if (u.getName().equals(user)) {
-				proxycli.removeUser(u);
-				proxycli.addUser(new UserInfo(user, creditscount, false));
+				u.setOnline(false);
+				// proxycli.removeUser(u);
+				// proxycli.addUser(new UserInfo(user, creditscount, false));
 				// proxycli.setUsers(users);
 				break;
 			}
@@ -324,13 +326,12 @@ public class ProxyImpl implements IProxy, Closeable {
 		for (FileServerInfo fsi : getLowestUsage(readQuorum)) {
 			ss = new ServerSenderTCP(fsi.getAddress(), fsi.getPort());
 			VersionResponse vs = (VersionResponse) ss.send(new VersionRequest(name));
-			try{
+			try {
 				if (vs.getVersion() > version) {
 					version = vs.getVersion();
 				}
-			}
-			catch(Exception e){
-				//should not happen. fileserver cannot go offline while using upload or download.
+			} catch (Exception e) {
+				// should not happen. fileserver cannot go offline while using upload or download.
 			}
 		}
 		// System.out.println("GetVersion(): Filename: " + name + " " + "Version: " + version);

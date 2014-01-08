@@ -1,6 +1,5 @@
 package your;
 
-import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -20,8 +19,6 @@ public class MultiThreadingTest {
 
 	private static ArrayList<TestRunnerClient> clientList = new ArrayList<TestRunnerClient>();
 	private static ArrayList<TestRunnerFileServer> serverList = new ArrayList<TestRunnerFileServer>();
-	private static TestInputStream in;
-	private static TestOutputStream out = new TestOutputStream(System.out);
 	private static Shell shell;
 	private static ExecutorService threads;
 
@@ -32,31 +29,33 @@ public class MultiThreadingTest {
 		CliComponent component;
 
 		int clients = config.getInt("clients");
-		if(clients>15||clients<1){
-		  clients=15;
+		if (clients > 15 || clients < 1) {
+			clients = 15;
 		}
 		Class<?>[] ck = new Class<?>[] { Config.class, Shell.class };
-		TestInputStream in = new TestInputStream();
-		TestOutputStream out = new TestOutputStream(System.out);
+		// TestInputStream in = new TestInputStream();
+		// TestOutputStream out = new TestOutputStream(System.out);
 
 		/*
 		 * Shell shell1 = new Shell("Proxy", out, in); Method methodProxy = factory.getClass().getMethod("startProxy", ck); Object componentProxy = methodProxy.invoke(factory, new Config("Proxy"), shell1); component = new CliComponent(componentProxy, shell1, out, in); threads.execute(new TestRunnerProxy((ProxyCli) componentProxy, component));
 		 */
 
 		for (int i = 1; i < 6; i++) {
+			TestInputStream in = new TestInputStream();
+			TestOutputStream out = new TestOutputStream(System.out);
 			shell = new Shell("FileServer", out, in);
 			Method methodFS = factory.getClass().getMethod("startFileServer", ck);
 			Object componentFS = methodFS.invoke(factory, new Config("fs" + i), shell);
-			in = new TestInputStream();
 			component = new CliComponent(componentFS, shell, out, in);
 			TestRunnerFileServer runner = new TestRunnerFileServer((FileServerCli) componentFS, component);
 			serverList.add(runner);
 			threads.execute(runner);
 		}
-		
+
 		for (int i = 1; i <= clients; i++) {
 
-			in = new TestInputStream();
+			TestInputStream in = new TestInputStream();
+			TestOutputStream out = new TestOutputStream(System.out);
 
 			shell = new Shell("Client", out, in);
 
@@ -73,7 +72,7 @@ public class MultiThreadingTest {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		//exitAll();
+		// exitAll();
 	}
 
 	private static void exitAll() {
@@ -85,15 +84,6 @@ public class MultiThreadingTest {
 			tr.exit();
 		}
 
-		try {
-			if (in != null)
-				in.close();
-			if (out != null)
-				out.close();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
 		threads.shutdownNow();
 	}
 }

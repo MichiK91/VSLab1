@@ -12,6 +12,14 @@ public class UserInfo implements Comparable<UserInfo>, Serializable {
 	private long credits;
 	private boolean online;
 
+	public void setName(String name) {
+		this.name = name;
+	}
+
+	public void setOnline(boolean online) {
+		this.online = online;
+	}
+
 	public UserInfo(String name, long credits, boolean online) {
 		this.name = name;
 		this.credits = credits;
@@ -39,4 +47,9 @@ public class UserInfo implements Comparable<UserInfo>, Serializable {
 	public boolean isOnline() {
 		return online;
 	}
+
+	public void setCredits(long credits) {
+		this.credits = credits;
+	}
+
 }

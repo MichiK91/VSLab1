@@ -19,7 +19,6 @@ public class TestRunnerClient implements Runnable {
 	private int uploads;
 	private int size;
 	private double ratio;
-	private Config testConfig;
 	private Config clientConfig;
 	private TimerTask uploadTimer;
 	private TimerTask downloadTimer;
@@ -31,7 +30,6 @@ public class TestRunnerClient implements Runnable {
 	public TestRunnerClient(ClientCli client, Config config, CliComponent comp, int number) {
 
 		this.client = client;
-		this.testConfig = config;
 		this.component = comp;
 		clientConfig = new Config("Client");
 
@@ -55,7 +53,7 @@ public class TestRunnerClient implements Runnable {
 			@Override
 			public void run() {
 
-				synchronized (client) {
+				synchronized (component) {
 					component.getIn().addLine("!download short.txt");
 				}
 			}
@@ -93,40 +91,38 @@ public class TestRunnerClient implements Runnable {
 			public void run() {
 
 				Random random = new Random();
-				synchronized (client) {
-					if (random.nextDouble() < ratio) {
+
+				if (random.nextDouble() < ratio) {
+					synchronized (component) {
 						component.getIn().addLine("!upload " + existingFile);
-
-					} else {
-
-						byte[] filedata = new byte[(1024 * size)];
-						new Random().nextBytes(filedata);
-						String dir = clientConfig.getString("download.dir");
-						File file = new File(dir);
-
-						FileOutputStream out;
-						try {
-							final String newFile = "" + new Random().nextLong();
-							out = new FileOutputStream(dir + "/" + newFile);
-							out.write(filedata);
-							component.getIn().addLine("!upload " + newFile);
-							out.close();
-						} catch (FileNotFoundException e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
-						} catch (IOException e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
-						}
-
 					}
+				} else {
+					byte[] filedata = new byte[(1024 * size)];
+					new Random().nextBytes(filedata);
+					String dir = clientConfig.getString("download.dir");
+					File file = new File(dir);
+
+					FileOutputStream out;
+					try {
+						final String newFile = "" + new Random().nextInt(100000000);
+						out = new FileOutputStream(dir + "/" + newFile);
+						out.write(filedata);
+						component.getIn().addLine("!upload " + newFile);
+						out.close();
+					} catch (FileNotFoundException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					} catch (IOException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+
 				}
 			}
 		};
 
 		timer2 = new Timer();
 		timer2.schedule(uploadTimer, (new Random()).nextInt(60000 / uploads), 60000 / uploads);
-
 	}
 
 	public void exit() {
