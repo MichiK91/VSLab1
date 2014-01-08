@@ -1,9 +1,10 @@
 package your;
 
-import java.io.IOException;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import util.CliComponent;
+import util.Config;
 import cli.Shell;
 import client.ClientCli;
 
@@ -15,15 +16,21 @@ public class TestRunnerClient implements Runnable {
 	private int size;
 	private double ratio;
 	private Shell shell;
+	private Config config;
 	private TimerTask tt;
 	private Timer timer;
+	private CliComponent component;
 
-	public TestRunnerClient(ClientCli client, int downloads, int uploads, int size, String ratio, Shell shell) {
+	public TestRunnerClient(ClientCli client, Config config, CliComponent comp) {
+
 		this.client = client;
-		this.downloads = downloads;
-		this.uploads = uploads;
-		this.size = size;
-		this.ratio = Double.parseDouble(ratio);
+		this.config = config;
+		this.component = comp;
+
+		this.downloads = config.getInt("downloadsPerMin");
+		this.uploads = config.getInt("uploadsPerMin");
+		this.size = config.getInt("fileSizeKB");
+		this.ratio = Double.parseDouble(config.getString("overwriteRatio"));
 		this.shell = shell;
 	}
 
@@ -33,13 +40,8 @@ public class TestRunnerClient implements Runnable {
 
 			@Override
 			public void run() {
-				try {
-					shell.writeLine("!login alice 2312345");
-					shell.writeLine("!download short.txt");
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
+				component.getIn().addLine("!login alice 12345");
+				component.getIn().addLine("!download short.txt");
 			}
 		};
 		timer = new Timer();
