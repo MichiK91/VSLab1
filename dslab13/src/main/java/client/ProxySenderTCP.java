@@ -8,9 +8,6 @@ import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
 
-import message.MessageWrapper;
-import message.Response;
-import message.Request;
 import util.Config;
 
 public class ProxySenderTCP implements Closeable, Sender {
@@ -37,10 +34,6 @@ public class ProxySenderTCP implements Closeable, Sender {
 	public void send(Object req) {
 		// send request
 		try {
-		  if(req instanceof MessageWrapper){
-	      System.out.println(((MessageWrapper) req).isMessage());
-	      System.out.println("encoded:"+new String(((MessageWrapper) req).getContent()));
-	      }
 			strout.writeObject(req);
 			strout.flush();
 		} catch (Exception e) {

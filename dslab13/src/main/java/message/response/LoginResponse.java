@@ -19,7 +19,8 @@ public class LoginResponse implements Response {
 
 	public enum Type {
 		SUCCESS("Successfully logged in."),
-		WRONG_CREDENTIALS("Wrong username or password.");
+		WRONG_CREDENTIALS("Wrong username or password."),
+		NO_PRIVATEKEY_REGISTERED("Private key does not exist.");
 
 		String message;
 
