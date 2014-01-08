@@ -43,10 +43,8 @@ public class ClientAccept implements Runnable{
 	  readPrivateKey();
 		while(true){
 			try {
-			  System.out.println("beginrunproxy");
 				cl = new ClientListenerCrypt(new ClientListenerBase64(new ClientListenerTCP()),proxycli, privateKey);
 				cl.getListener().getListener().setSocket(s.accept());
-				System.out.println("acceptedrunproxy");
 				list.add(cl);
 				threads.execute(cl);
 			} catch (Exception e) {
@@ -76,16 +74,13 @@ public class ClientAccept implements Runnable{
       in = new PEMReader(new FileReader(pathToPrivateKey), new PasswordFinder() {
         @Override
         public char[] getPassword() {
-        
-          // reads the password from standard input for decrypting the private key
-          System.out.println("Enter pass phrase:");
-          return "12345".toCharArray();//new BufferedReader(new InputStreamReader(System.in)).readLine().toCharArray();
+
+          return "12345".toCharArray();
           
         }
         
       });
       KeyPair keyPair = (KeyPair) in.readObject(); 
-      System.out.println("keypair read");
       privateKey = keyPair.getPrivate();
     } catch (IOException e1) {
       // TODO Auto-generated catch block

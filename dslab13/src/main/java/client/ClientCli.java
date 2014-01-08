@@ -72,12 +72,20 @@ public class ClientCli implements IClientCli {
 	@Command
 	public LoginResponse login(String username, String password)
 			throws IOException {
+	    
+	    String keysDir = config.getString("keys.dir");
+  	  String pathToPrivateKey = keysDir+"/"+username+".pem";
+      File f = new File(pathToPrivateKey);
+      if(!f.exists()){
+        return new LoginResponse(LoginResponse.Type.NO_PRIVATEKEY_REGISTERED);
+      }
       psender.send("!login " + username+" "+password);
       Object res = psender.receive();
       if(res instanceof String && res.equals("!secureChannelCreated")){
         psender.send(new LoginRequest(username, password));
         LoginResponse lres = (LoginResponse)psender.receive();
         if(((LoginResponse) lres).getType().equals(LoginResponse.Type.SUCCESS)){
+          this.username = username;
           login = true;
         }
         return (LoginResponse) lres;
@@ -88,6 +96,7 @@ public class ClientCli implements IClientCli {
 	@Override
 	@Command
 	public Response credits() throws IOException {
+	  if(!login){return new MessageResponse("Not logged in!");}
 		CreditsRequest creq = new CreditsRequest();
 		psender.send(creq);
 		Response res = (Response) psender.receive();
@@ -97,6 +106,7 @@ public class ClientCli implements IClientCli {
 	@Override
 	@Command
 	public Response buy(long credits) throws IOException {
+	  if(!login){return new MessageResponse("Not logged in!");}
 		BuyRequest breq = new BuyRequest(credits);
 		psender.send(breq);
     Response res = (Response) psender.receive();
@@ -106,6 +116,7 @@ public class ClientCli implements IClientCli {
 	@Override
 	@Command
 	public Response list() throws IOException {
+	  if(!login){return new MessageResponse("Not logged in!");}
 		ListRequest lreq = new ListRequest();
 		psender.send(lreq);
     Response res = (Response) psender.receive();
@@ -115,6 +126,7 @@ public class ClientCli implements IClientCli {
 	@Override
 	@Command
 	public Response download(String filename) throws IOException {
+    if(!login){return new MessageResponse("Not logged in!");}
 		DownloadTicketRequest dtreq = new DownloadTicketRequest(filename);
 		psender.send(dtreq);
     Response res = (Response) psender.receive();
@@ -166,6 +178,7 @@ public class ClientCli implements IClientCli {
 	@Command
 	public MessageResponse upload(String filename) throws IOException {
 		
+	  if(!login){return new MessageResponse("Not logged in!");}
 		String dir = config.getString("download.dir");
 		
 		File file = new File(dir);
@@ -206,6 +219,7 @@ public class ClientCli implements IClientCli {
 	@Override
 	@Command
 	public MessageResponse logout() throws IOException {
+	  if(!login){return new MessageResponse("Not logged in!");}
 		LogoutRequest lreq = new LogoutRequest();
 		
 		psender.send(lreq);

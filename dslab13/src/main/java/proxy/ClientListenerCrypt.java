@@ -1,21 +1,14 @@
 package proxy;
 
-import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
-import java.io.EOFException;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectInputStream;
 import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
-import java.io.InputStreamReader;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
-import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
@@ -30,13 +23,6 @@ import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
 
-import org.bouncycastle.openssl.PEMReader;
-import org.bouncycastle.util.encoders.Base64;
-
-
-import util.Config;
-import util.Serializer;
-
 import message.MessageWrapper;
 import message.Request;
 import message.Response;
@@ -47,7 +33,12 @@ import message.request.ListRequest;
 import message.request.LoginRequest;
 import message.request.LogoutRequest;
 import message.request.UploadRequest;
-import message.response.LoginResponse;
+
+import org.bouncycastle.openssl.PEMReader;
+import org.bouncycastle.util.encoders.Base64;
+
+import util.Config;
+import util.Serializer;
 
 public class ClientListenerCrypt implements Runnable, Closeable, Listener{
 
@@ -61,7 +52,7 @@ public class ClientListenerCrypt implements Runnable, Closeable, Listener{
   private boolean connected;
   private ProxyCli proxycli;
   private ProxyImpl proxy;
-  
+  private String user;
   
   
   public ClientListenerCrypt(ClientListenerBase64 clientListenerBase64, ProxyCli proxycli, PrivateKey privateKey){
@@ -76,15 +67,19 @@ public class ClientListenerCrypt implements Runnable, Closeable, Listener{
 
     run = true;
     while (run) {
-
+      
       Object o = this.receive();
+      
+      if(o==null){
+        System.out.println("Client "+user+" disconnected");
+        run=false;
+      }
       if(o != null && o instanceof Request){
         try {
           Response res = sendRequestToProxy((Request) o);
           this.listen(res);
         } catch (IOException e) {
-          // TODO Auto-generated catch block
-          e.printStackTrace();
+
         }
       }
 
@@ -108,22 +103,22 @@ public class ClientListenerCrypt implements Runnable, Closeable, Listener{
         byte[] encryptReq = cryptCipher.doFinal(yourBytesReq);
         clientListenerBase64.listen(new MessageWrapper(encryptReq, true));
       } catch (NoSuchAlgorithmException e) {
-        // TODO Auto-generated catch block
+        
         e.printStackTrace();
       } catch (NoSuchPaddingException e) {
-        // TODO Auto-generated catch block
+        
         e.printStackTrace();
       } catch (InvalidKeyException e) {
-        // TODO Auto-generated catch block
+        
         e.printStackTrace();
       } catch (IllegalBlockSizeException e) {
-        // TODO Auto-generated catch block
+        
         e.printStackTrace();
       } catch (BadPaddingException e) {
-        // TODO Auto-generated catch block
+        
         e.printStackTrace();
       } catch (InvalidAlgorithmParameterException e) {
-        // TODO Auto-generated catch block
+        
         e.printStackTrace();
       }
       
@@ -131,6 +126,9 @@ public class ClientListenerCrypt implements Runnable, Closeable, Listener{
     } else if(req instanceof String){
       
       try {
+        final String B64 = "a-zA-Z0-9/+";
+        assert ((String)req).matches("!ok ["+B64+"]{43}= ["+B64+"]{43}= ["+B64+"]{43}= ["+B64+"]{22}==") : "2nd message";
+        
         cryptCipher = Cipher.getInstance("RSA/NONE/OAEPWithSHA256AndMGF1Padding");
         cryptCipher.init(Cipher.ENCRYPT_MODE, publicKey);
         
@@ -138,19 +136,19 @@ public class ClientListenerCrypt implements Runnable, Closeable, Listener{
         clientListenerBase64.listen(encryptReq);
         
       }  catch (NoSuchAlgorithmException e) {
-        // TODO Auto-generated catch block
+        
         e.printStackTrace();
       } catch (NoSuchPaddingException e) {
-        // TODO Auto-generated catch block
+        
         e.printStackTrace();
       } catch (InvalidKeyException e) {
-        // TODO Auto-generated catch block
+        
         e.printStackTrace();
       } catch (IllegalBlockSizeException e) {
-        // TODO Auto-generated catch block
+        
         e.printStackTrace();
       } catch (BadPaddingException e) {
-        // TODO Auto-generated catch block
+        
         e.printStackTrace();
       }
       
@@ -174,16 +172,18 @@ public class ClientListenerCrypt implements Runnable, Closeable, Listener{
         if(answerSplit.length==3 && answerSplit[0].equals("!login")){
           Config config = new Config("proxy");
           String keysDir = config.getString("keys.dir");
-          String pathToPublicKey = keysDir+"/"+answerSplit[1]+".pub.pem";
+          this.user = answerSplit[1];
+          String pathToPublicKey = keysDir+"/"+user+".pub.pem";
+          
           PEMReader pemReader;
           try {
             pemReader = new PEMReader(new FileReader(pathToPublicKey));
             publicKey = (PublicKey) pemReader.readObject();
           } catch (FileNotFoundException e) {
-            // TODO Auto-generated catch block
+            
             e.printStackTrace();
           } catch (IOException e) {
-            // TODO Auto-generated catch block
+            
             e.printStackTrace();
           }
           SecureRandom secureRandom = new SecureRandom(); 
@@ -200,32 +200,32 @@ public class ClientListenerCrypt implements Runnable, Closeable, Listener{
          
           ivParameter = secureRandom.generateSeed(16);
           try {
-            System.out.println("proxyChallenge: "+new String(proxyChallenge));
+
             this.listen("!ok " + answerSplit[2] + " " + new String(Base64.encode(proxyChallenge))+" "+new String(Base64.encode(AESKey.getEncoded()))+" "+new String(Base64.encode(ivParameter)));
             
           } catch (IOException e) {
-            // TODO Auto-generated catch block
+            
             e.printStackTrace();
           }
         }
       } catch (NoSuchAlgorithmException e) {
-        // TODO Auto-generated catch block
+        
         e.printStackTrace();
       } catch (NoSuchPaddingException e) {
-        // TODO Auto-generated catch block
+        
         e.printStackTrace();
       } catch (InvalidKeyException e) {
-        // TODO Auto-generated catch block
+        
         e.printStackTrace();
       } catch (IllegalBlockSizeException e) {
-        // TODO Auto-generated catch block
+        
         e.printStackTrace();
       } catch (BadPaddingException e) {
-        // TODO Auto-generated catch block
+        
         e.printStackTrace();
       }
       String res = new String((byte[]) o);
-      
+      return res;
     } else if(o instanceof MessageWrapper){
       Cipher cryptCipher;
       try {
@@ -239,14 +239,13 @@ public class ClientListenerCrypt implements Runnable, Closeable, Listener{
         
         if(((MessageWrapper) o).isMessage()){
           if(connected){
-            
             try {
-              return Serializer.deserialize(((MessageWrapper) o).getContent());
+              return Serializer.deserialize(decryptReq);
             } catch (ClassNotFoundException e) {
-              // TODO Auto-generated catch block
+              
               e.printStackTrace();
             } catch (IOException e) {
-              // TODO Auto-generated catch block
+              
               e.printStackTrace();
             }
           }
@@ -254,26 +253,27 @@ public class ClientListenerCrypt implements Runnable, Closeable, Listener{
           byte[] decodedReq = Base64.decode(decryptReq);
           if(Arrays.equals(this.proxyChallenge, decodedReq)){
             connected = true;
+            return new String("AESChannel completed!");
           }
 
         }
       } catch (NoSuchAlgorithmException e) {
-        // TODO Auto-generated catch block
+        
         e.printStackTrace();
       } catch (NoSuchPaddingException e) {
-        // TODO Auto-generated catch block
+        
         e.printStackTrace();
       } catch (InvalidKeyException e) {
-        // TODO Auto-generated catch block
+        
         e.printStackTrace();
       } catch (IllegalBlockSizeException e) {
-        // TODO Auto-generated catch block
+        
         e.printStackTrace();
       } catch (BadPaddingException e) {
-        // TODO Auto-generated catch block
+        
         e.printStackTrace();
       } catch (InvalidAlgorithmParameterException e1) {
-        // TODO Auto-generated catch block
+        
         e1.printStackTrace();
       }
     }

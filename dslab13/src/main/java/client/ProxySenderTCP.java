@@ -8,8 +8,6 @@ import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
 
-import message.Response;
-import message.Request;
 import util.Config;
 
 public class ProxySenderTCP implements Closeable, Sender {
