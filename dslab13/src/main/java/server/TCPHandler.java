@@ -69,7 +69,7 @@ public class TCPHandler implements Runnable, Closeable {
 						// send object
 						strout = new ObjectOutputStream(csocket.getOutputStream());
 						strout.writeObject(res);
-
+						break;
 
 					} else if(o instanceof String){
 						//Upload with HMAC

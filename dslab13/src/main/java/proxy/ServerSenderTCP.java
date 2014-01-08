@@ -134,6 +134,8 @@ public class ServerSenderTCP implements Closeable {
 				} else {
 					System.out.println(res);
 				}
+			} else{
+				break;
 			}
 		}while(true);
 
