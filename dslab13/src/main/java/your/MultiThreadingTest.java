@@ -32,7 +32,9 @@ public class MultiThreadingTest {
 		CliComponent component;
 
 		int clients = config.getInt("clients");
-
+		if(clients>15||clients<1){
+		  clients=15;
+		}
 		Class<?>[] ck = new Class<?>[] { Config.class, Shell.class };
 		TestInputStream in = new TestInputStream();
 		TestOutputStream out = new TestOutputStream(System.out);
@@ -51,7 +53,7 @@ public class MultiThreadingTest {
 			serverList.add(runner);
 			threads.execute(runner);
 		}
-
+		
 		for (int i = 0; i < clients; i++) {
 
 			in = new TestInputStream();
@@ -61,7 +63,7 @@ public class MultiThreadingTest {
 			Method methodClient = factory.getClass().getMethod("startClient", ck);
 			Object componentClient = methodClient.invoke(factory, new Config("Client"), shell);
 			component = new CliComponent(componentClient, shell, out, in);
-			TestRunnerClient runner = new TestRunnerClient((ClientCli) componentClient, config, component);
+			TestRunnerClient runner = new TestRunnerClient((ClientCli) componentClient, config, component, i);
 			clientList.add(runner);
 			threads.execute(runner);
 		}

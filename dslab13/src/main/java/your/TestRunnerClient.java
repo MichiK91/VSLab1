@@ -17,9 +17,11 @@ public class TestRunnerClient implements Runnable {
 	private Config config;
 	private TimerTask tt;
 	private Timer timer;
+	 private TimerTask tt2;
+	  private Timer timer2;
 	private CliComponent component;
 
-	public TestRunnerClient(ClientCli client, Config config, CliComponent comp) {
+	public TestRunnerClient(ClientCli client, Config config, CliComponent comp, int number) {
 
 		this.client = client;
 		this.config = config;
@@ -33,16 +35,27 @@ public class TestRunnerClient implements Runnable {
 
 	@Override
 	public void run() {
+	  component.getIn().addLine("!login alice 12345");
 		tt = new TimerTask() {
 
 			@Override
 			public void run() {
-				component.getIn().addLine("!login alice 12345");
 				component.getIn().addLine("!download short.txt");
 			}
 		};
 		timer = new Timer();
-		timer.schedule(tt, 0, 50000000);
+		timer.schedule(tt, 0, downloads);
+		
+
+    tt2 = new TimerTask() {
+
+      @Override
+      public void run() {
+        component.getIn().addLine("!upload short.txt");
+      }
+    };
+    timer2 = new Timer();
+    timer2.schedule(tt2, 0, uploads);
 	}
 
 	public void exit() {
