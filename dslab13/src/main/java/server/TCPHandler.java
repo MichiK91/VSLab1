@@ -120,7 +120,7 @@ public class TCPHandler implements Runnable, Closeable {
 
 			} catch (IOException e) {
 				System.out.println("FileServer shuts down. No further downloads are allowed.");
-				e.printStackTrace();
+				
 				break;
 			} catch (ClassNotFoundException e1) {
 				e1.printStackTrace();
