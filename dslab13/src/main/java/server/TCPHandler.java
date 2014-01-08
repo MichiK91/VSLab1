@@ -70,16 +70,12 @@ public class TCPHandler implements Runnable, Closeable {
 						boolean eq = handler.executeRequest(hmacreq);
 
 						if(eq){
-//							int innercounter = 3;
-//							do{
-								Response res = sendRequestToFileServer(hmacreq.getReq());
+							Response res = sendRequestToFileServer(hmacreq.getReq());
 
-								HMACResponse hmacres = new HMACResponse(Base64.encode(handler.generateHMAC(res)), res);
+							HMACResponse hmacres = new HMACResponse(Base64.encode(handler.generateHMAC(res)), res);
 
-								strout = new ObjectOutputStream(csocket.getOutputStream());
-								strout.writeObject(hmacres);
-//								innercounter--;
-//							}while(innercounter >= 0);
+							strout = new ObjectOutputStream(csocket.getOutputStream());
+							strout.writeObject(hmacres);
 							break;
 
 						} else {
@@ -108,7 +104,7 @@ public class TCPHandler implements Runnable, Closeable {
 						strout.writeObject(res);
 						break;
 					}
-					
+
 				}while(true);
 
 
@@ -120,7 +116,7 @@ public class TCPHandler implements Runnable, Closeable {
 
 			} catch (IOException e) {
 				System.out.println("FileServer shuts down. No further downloads are allowed.");
-				
+
 				break;
 			} catch (ClassNotFoundException e1) {
 				e1.printStackTrace();

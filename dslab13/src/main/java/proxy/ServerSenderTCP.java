@@ -40,42 +40,42 @@ public class ServerSenderTCP implements Closeable {
 	private InetAddress addr;
 	private int port;
 
-//	public static void main (String [] args){
-//		ServerSenderTCP ss = null;
-//		try {
-//			ss = new ServerSenderTCP(InetAddress.getLocalHost(), 14342);
-//		} catch (UnknownHostException e) {
-//			e.printStackTrace();
-//		}
-//
-//		byte[] content = new byte[] {(byte)0x41, (byte)0x61, (byte)0x61, (byte)0x61, (byte)0x61};
-//		UploadRequest req = new UploadRequest("test.txt", 0, content); 
-//		ListRequest list = new ListRequest();
-//		
-//
-//		
-//
-//		try {
-//			Response res =  ss.send(list);
-//			System.out.println(res);
-//		} catch (IOException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
-//
+	//	public static void main (String [] args){
+	//		ServerSenderTCP ss = null;
+	//		try {
+	//			ss = new ServerSenderTCP(InetAddress.getLocalHost(), 14342);
+	//		} catch (UnknownHostException e) {
+	//			e.printStackTrace();
+	//		}
+	//
+	//		byte[] content = new byte[] {(byte)0x41, (byte)0x61, (byte)0x61, (byte)0x61, (byte)0x61};
+	//		UploadRequest req = new UploadRequest("test.txt", 0, content); 
+	//		ListRequest list = new ListRequest();
+	//		
+	//
+	//		
+	//
+	//		try {
+	//			Response res =  ss.send(list);
+	//			System.out.println(res);
+	//		} catch (IOException e) {
+	//			// TODO Auto-generated catch block
+	//			e.printStackTrace();
+	//		}
+	//
 
-		//create key. should be in proxyimpl @upload
-		//		byte[] base64Message = generateHMAC(content);
-		//
-		//		String send = new String(base64Message) + " !upload " + "up.txt " + "0 " + new String(content);
-		//		System.out.println(send);
-		//
-		//		try {
-		//			System.out.println(ss.send(send));
-		//		} catch (IOException e) {
-		//			e.printStackTrace();
-		//		}
-//	}
+	//create key. should be in proxyimpl @upload
+	//		byte[] base64Message = generateHMAC(content);
+	//
+	//		String send = new String(base64Message) + " !upload " + "up.txt " + "0 " + new String(content);
+	//		System.out.println(send);
+	//
+	//		try {
+	//			System.out.println(ss.send(send));
+	//		} catch (IOException e) {
+	//			e.printStackTrace();
+	//		}
+	//	}
 
 	public ServerSenderTCP(InetAddress addr,int port){
 		this.addr = addr;
@@ -97,13 +97,13 @@ public class ServerSenderTCP implements Closeable {
 		if(!connect()){
 			return null;
 		}
-		
+
 		HMACHandler handler = new HMACHandler(new Config("proxy"));
 
 		byte[] base64Message = Base64.encode(handler.generateHMAC((Request) req));
 
 		HMACRequest hmacreq = new HMACRequest(base64Message, (Request) req);
-		
+
 		HMACResponse res = null;
 
 		do{
@@ -113,31 +113,22 @@ public class ServerSenderTCP implements Closeable {
 			//get response
 			int counter = 3;
 			boolean br = false;
-//			do{
-				
-				strin = new ObjectInputStream(socket.getInputStream());
-				try {
-					res = (HMACResponse) strin.readObject();
-				} catch (ClassNotFoundException e) {
-					e.printStackTrace();
-				}
-				boolean eq = handler.executeResponse(res);
-//				if(eq){
-//					break;
-//				}
-//				else{
-//					if(counter == 0){
-//						br = true;
-//						break;
-//					} else{
-//						System.out.println("FAILES");
-//					}
-//					counter--;
-//				}
-//
-//			}while(true);
+
+			strin = new ObjectInputStream(socket.getInputStream());
+			try {
+				res = (HMACResponse) strin.readObject();
+			} catch (ClassNotFoundException e) {
+				e.printStackTrace();
+			}
+			boolean eq = handler.executeResponse(res);
+			if(eq){
+				break;
+			} else{
+				br = true;
+			}
 
 			if(br){
+				System.out.println("False HMAC from Server!");
 				break;
 			}
 			if (res.getRes().getClass().equals(MessageResponse.class)) {
