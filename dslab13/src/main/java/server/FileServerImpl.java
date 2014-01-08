@@ -76,7 +76,9 @@ public class FileServerImpl implements IFileServer, Closeable {
 			if (f.isFile()) {
 				if (f.getName().equals(request.getTicket().getFilename())) {
 					// read content
-					FileInputStream in = new FileInputStream(f);
+				  synchronized(files){
+				    FileInputStream in = new FileInputStream(f);
+				  
 					String s = "";
 					while (true) {
 						int read = in.read();
@@ -89,6 +91,7 @@ public class FileServerImpl implements IFileServer, Closeable {
 					}
 					content = s.getBytes();
 					in.close();
+				  }
 				}
 			}
 		}
