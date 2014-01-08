@@ -43,6 +43,7 @@ public class TestRunnerClient implements Runnable {
 		this.number = number;
 	}
 
+	Object test = new Object();
 	@Override
 	public void run() {
 
@@ -52,6 +53,7 @@ public class TestRunnerClient implements Runnable {
 		downloadTimer = new TimerTask() {
 			@Override
 			public void run() {
+
 				synchronized (client) {
 					component.getIn().addLine("!download short.txt");
 				}
@@ -85,6 +87,7 @@ public class TestRunnerClient implements Runnable {
 		}
 
 		uploadTimer = new TimerTask() {
+
 			@Override
 			public void run() {
 
