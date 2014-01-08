@@ -53,56 +53,61 @@ public class TCPHandler implements Runnable, Closeable {
 				ssocket = new ServerSocket(config.getInt("tcp.port"));
 				csocket = ssocket.accept();
 
-				// recieve object
-				strin = new ObjectInputStream(csocket.getInputStream());
-				Object o = strin.readObject();
-				Request req = null;
-				if (o instanceof Request) {
-					req = (Request) o;
-					// execute object
-					Response res = sendRequestToFileServer(req);
-
-					// send object
-					strout = new ObjectOutputStream(csocket.getOutputStream());
-					strout.writeObject(res);
-
-					strout.close();
-					strin.close();
-					csocket.close();
-					ssocket.close();
-
-				} else if(o instanceof String){
-					//Upload with HMAC
-					String s = (String) o;
-
-					String[] r = s.split(" ");
-					
-					String filename = r[2];
-					int version = Integer.parseInt(r[3]);
-					byte[] content = r[4].getBytes();
-
-					boolean b = hmacEquals(r);
-
-					if(b){
+				boolean success = false;
+				int counter = 3;
+				
+				do{
+					// recieve object
+					strin = new ObjectInputStream(csocket.getInputStream());
+					Object o = strin.readObject();
+					Request req = null;
+					if (o instanceof Request) {
+						req = (Request) o;
 						// execute object
-						Response res = sendRequestToFileServer(new UploadRequest(filename, version, content));
+						Response res = sendRequestToFileServer(req);
 
+						// send object
 						strout = new ObjectOutputStream(csocket.getOutputStream());
 						strout.writeObject(res);
+						break;
 
-						strout.close();
-						strin.close();
-						csocket.close();
-						ssocket.close();
+					} else if(o instanceof String){
+						//Upload with HMAC
+						String s = (String) o;
 
-					} else {
-						strout = new ObjectOutputStream(csocket.getOutputStream());
-						strout.writeObject(new MessageResponse("Fail"));
-						//TODO
+						String[] r = s.split(" ");
+
+						String filename = r[2];
+						int version = Integer.parseInt(r[3]);
+						byte[] content = r[4].getBytes();
+
+						success = hmacEquals(r);
+
+						if(success){
+							// execute object
+							Response res = sendRequestToFileServer(new UploadRequest(filename, version, content));
+
+							strout = new ObjectOutputStream(csocket.getOutputStream());
+							strout.writeObject(res);
+
+						} else {
+							
+							if(counter == 0){
+								strout = new ObjectOutputStream(csocket.getOutputStream());
+								strout.writeObject(new MessageResponse("Upload is aborted"));
+								break;
+							} else {
+								strout = new ObjectOutputStream(csocket.getOutputStream());
+								strout.writeObject(new MessageResponse("Failed"));
+							}
+							counter--;
+						}
+
+
 					}
-
-
 				}
+				while(success);
+				
 				strout.close();
 				strin.close();
 				csocket.close();
@@ -124,10 +129,9 @@ public class TCPHandler implements Runnable, Closeable {
 		byte[] bhash = r[0].getBytes();
 		byte[] content = r[4].getBytes();
 
-		//get HMAC
-		Config c = new Config("fs1");
+		
 		byte[] keyBytes = new byte[1024];
-		String pathToSecretKey = c.getString("hmac.key");
+		String pathToSecretKey = config.getString("hmac.key");
 		FileInputStream fis;
 		try {
 			fis = new FileInputStream(pathToSecretKey);
