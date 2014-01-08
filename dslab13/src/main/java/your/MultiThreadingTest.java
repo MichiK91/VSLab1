@@ -6,6 +6,8 @@ import java.util.ArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import proxy.ProxyCli;
+
 import server.FileServerCli;
 import util.CliComponent;
 import util.ComponentFactory;
@@ -33,16 +35,20 @@ public class MultiThreadingTest {
 			clients = 15;
 		}
 		Class<?>[] ck = new Class<?>[] { Config.class, Shell.class };
-		// TestInputStream in = new TestInputStream();
-		// TestOutputStream out = new TestOutputStream(System.out);
+		 
 
-		/*
-		 * Shell shell1 = new Shell("Proxy", out, in); Method methodProxy = factory.getClass().getMethod("startProxy", ck); Object componentProxy = methodProxy.invoke(factory, new Config("Proxy"), shell1); component = new CliComponent(componentProxy, shell1, out, in); threads.execute(new TestRunnerProxy((ProxyCli) componentProxy, component));
-		 */
+		TestInputStream in = new TestInputStream();
+    TestOutputStream out = new TestOutputStream(System.out);
+    Shell shell1 = new Shell("Proxy", out, in); 
+    Method methodProxy = factory.getClass().getMethod("startProxy", ck); 
+    Object componentProxy = methodProxy.invoke(factory, new Config("Proxy"), shell1); 
+    component = new CliComponent(componentProxy, shell1, out, in); 
+    threads.execute(new TestRunnerProxy((ProxyCli) componentProxy, component));
+		  
 
 		for (int i = 1; i < 6; i++) {
-			TestInputStream in = new TestInputStream();
-			TestOutputStream out = new TestOutputStream(System.out);
+			in = new TestInputStream();
+			out = new TestOutputStream(System.out);
 			shell = new Shell("FileServer", out, in);
 			Method methodFS = factory.getClass().getMethod("startFileServer", ck);
 			Object componentFS = methodFS.invoke(factory, new Config("fs" + i), shell);
@@ -54,8 +60,8 @@ public class MultiThreadingTest {
 
 		for (int i = 1; i <= clients; i++) {
 
-			TestInputStream in = new TestInputStream();
-			TestOutputStream out = new TestOutputStream(System.out);
+			in = new TestInputStream();
+			out = new TestOutputStream(System.out);
 
 			shell = new Shell("Client", out, in);
 
@@ -66,6 +72,9 @@ public class MultiThreadingTest {
 			clientList.add(runner);
 			threads.execute(runner);
 		}
+		
+		
+    
 		try {
 			Thread.sleep(2000);
 		} catch (InterruptedException e) {
