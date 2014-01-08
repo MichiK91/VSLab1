@@ -63,7 +63,6 @@ public class ClientListenerCrypt implements Runnable, Closeable, Listener{
   private ProxyImpl proxy;
   
   
-  
   public ClientListenerCrypt(ClientListenerBase64 clientListenerBase64, ProxyCli proxycli, PrivateKey privateKey){
     this.clientListenerBase64 = clientListenerBase64;
     this.proxycli = proxycli;
@@ -76,15 +75,20 @@ public class ClientListenerCrypt implements Runnable, Closeable, Listener{
 
     run = true;
     while (run) {
-
+      
       Object o = this.receive();
+      
+      if(o==null){
+        System.out.println("runstop CryptListener");
+        run=false;
+      }
       if(o != null && o instanceof Request){
         try {
           Response res = sendRequestToProxy((Request) o);
           this.listen(res);
         } catch (IOException e) {
           // TODO Auto-generated catch block
-          e.printStackTrace();
+          System.out.println("Michi");
         }
       }
 
@@ -169,6 +173,7 @@ public class ClientListenerCrypt implements Runnable, Closeable, Listener{
         
         byte[] decryptReq = cryptCipher.doFinal((byte[])o);
         String answer = new String(decryptReq);
+        System.out.println(answer);
         String[] answerSplit = answer.split(" ");
         
         if(answerSplit.length==3 && answerSplit[0].equals("!login")){
@@ -200,7 +205,7 @@ public class ClientListenerCrypt implements Runnable, Closeable, Listener{
          
           ivParameter = secureRandom.generateSeed(16);
           try {
-            System.out.println("proxyChallenge: "+new String(proxyChallenge));
+
             this.listen("!ok " + answerSplit[2] + " " + new String(Base64.encode(proxyChallenge))+" "+new String(Base64.encode(AESKey.getEncoded()))+" "+new String(Base64.encode(ivParameter)));
             
           } catch (IOException e) {
@@ -225,7 +230,7 @@ public class ClientListenerCrypt implements Runnable, Closeable, Listener{
         e.printStackTrace();
       }
       String res = new String((byte[]) o);
-      
+      return res;
     } else if(o instanceof MessageWrapper){
       Cipher cryptCipher;
       try {
@@ -239,9 +244,8 @@ public class ClientListenerCrypt implements Runnable, Closeable, Listener{
         
         if(((MessageWrapper) o).isMessage()){
           if(connected){
-            
             try {
-              return Serializer.deserialize(((MessageWrapper) o).getContent());
+              return Serializer.deserialize(decryptReq);
             } catch (ClassNotFoundException e) {
               // TODO Auto-generated catch block
               e.printStackTrace();
@@ -254,6 +258,8 @@ public class ClientListenerCrypt implements Runnable, Closeable, Listener{
           byte[] decodedReq = Base64.decode(decryptReq);
           if(Arrays.equals(this.proxyChallenge, decodedReq)){
             connected = true;
+            System.out.println("AESChannel completed!");
+            return new String("AESChannel completed!");
           }
 
         }
@@ -277,6 +283,7 @@ public class ClientListenerCrypt implements Runnable, Closeable, Listener{
         e1.printStackTrace();
       }
     }
+    System.out.println();
     return null;
   }
 

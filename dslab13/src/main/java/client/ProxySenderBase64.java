@@ -20,9 +20,13 @@ public class ProxySenderBase64 implements Sender {
       byte[] encodedBytes = Base64.encode((byte[])req);
       proxySender.send(encodedBytes); 
     } else if (req instanceof MessageWrapper){
+      System.out.println("ismessage:"+((MessageWrapper) req).isMessage());
       byte[] yourBytes = ((MessageWrapper) req).getContent();
       byte[] encodedBytes = Base64.encode(yourBytes);
+
       System.out.println(((MessageWrapper) req).isMessage());
+      System.out.println("encoded:"+new String(((MessageWrapper) req).getContent()));
+      
       proxySender.send(new MessageWrapper(encodedBytes, ((MessageWrapper) req).isMessage()));
       
     }
