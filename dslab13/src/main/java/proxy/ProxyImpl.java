@@ -157,6 +157,10 @@ public class ProxyImpl implements IProxy, Closeable {
 		// get latest Version
 		int version = getLatestVersion(filename).getVersion();
 
+		if(version == -1){
+			return new MessageResponse("No more servers are online");
+		}
+
 		if (readQuorum < 0) {
 			readQuorum = proxycli.getReadQuorum();
 		}
@@ -238,7 +242,9 @@ public class ProxyImpl implements IProxy, Closeable {
 		ServerSenderTCP sstcp;
 		List<FileServerInfo> servers = getLowestUsage(writeQuorum);
 
-		request = new UploadRequest(request.getFilename(), getLatestVersion(request.getFilename()).getVersion() + 1, request.getContent());
+		int version = getLatestVersion(request.getFilename()).getVersion();
+
+		request = new UploadRequest(request.getFilename(), version + 1, request.getContent());
 		MessageResponse ures = null;
 
 		for (FileServerInfo fs : servers) {
@@ -318,8 +324,13 @@ public class ProxyImpl implements IProxy, Closeable {
 		for (FileServerInfo fsi : getLowestUsage(readQuorum)) {
 			ss = new ServerSenderTCP(fsi.getAddress(), fsi.getPort());
 			VersionResponse vs = (VersionResponse) ss.send(new VersionRequest(name));
-			if (vs.getVersion() > version) {
-				version = vs.getVersion();
+			try{
+				if (vs.getVersion() > version) {
+					version = vs.getVersion();
+				}
+			}
+			catch(Exception e){
+				//should not happen. fileserver cannot go offline while using upload or download.
 			}
 		}
 		// System.out.println("GetVersion(): Filename: " + name + " " + "Version: " + version);
