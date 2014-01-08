@@ -21,7 +21,8 @@ public class TestRunnerClient implements Runnable {
 	private double ratio;
 	private Config testConfig;
 	private Config clientConfig;
-	private TimerTask tt;
+	private TimerTask uploadTimer;
+	private TimerTask downloadTimer;
 	private Timer timer;
 	private CliComponent component;
 
@@ -60,7 +61,7 @@ public class TestRunnerClient implements Runnable {
 			e.printStackTrace();
 		}
 
-		tt = new TimerTask() {
+		uploadTimer = new TimerTask() {
 			@Override
 			public void run() {
 				component.getIn().addLine("!login alice 12345");
@@ -69,7 +70,7 @@ public class TestRunnerClient implements Runnable {
 			}
 		};
 		timer = new Timer();
-		timer.schedule(tt, 0, 50000000);
+		timer.schedule(uploadTimer, 0, 50000000);
 	}
 
 	public void exit() {
